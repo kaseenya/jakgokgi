@@ -4165,6 +4165,52 @@ let prTouchState = { type: null, startX: 0, startY: 0, startBeat: 0, startPitch:
 let prActiveTouches = 0; // 현재 활성 터치 수
 const prActivePointers = new Set(); // 활성 포인터 ID 추적
 
+function resetPRTouchSnapshot() {
+  delete prTouchState.snapshotTaken;
+  delete prTouchState.snapshotState;
+  delete prTouchState.redoBeforeSnapshot;
+}
+
+function prTouchSnapshot() {
+  // 터치 편집 중 생긴 히스토리는 핀치 전환 시 되돌릴 수 있게 따로 표시한다.
+  if (prTouchState.snapshotTaken) return;
+  prTouchState.snapshotState = JSON.stringify(PR.notes);
+  prTouchState.redoBeforeSnapshot = PR_REDO.slice();
+  prSnapshot();
+  prTouchState.snapshotTaken = true;
+}
+
+function cancelPRTouchEditForPinch() {
+  // 두 번째 손가락이 들어온 순간, 첫 번째 터치로 시작된 편집을 완전히 취소한다.
+  // 화면의 노트뿐 아니라 undo/redo 스택도 편집 전으로 되돌려서 핀치줌이 히스토리에 남지 않게 한다.
+  if (prTouchState.previewTimer) {
+    clearTimeout(prTouchState.previewTimer);
+    prTouchState.previewTimer = null;
+  }
+
+  if (prTouchState.snapshotTaken) {
+    const snapshot = prTouchState.snapshotState;
+    PR.notes = JSON.parse(snapshot);
+    if (PR_HISTORY.length > 0 && PR_HISTORY[PR_HISTORY.length - 1] === snapshot) {
+      PR_HISTORY.pop();
+    }
+    if (Array.isArray(prTouchState.redoBeforeSnapshot)) {
+      PR_REDO.length = 0;
+      PR_REDO.push(...prTouchState.redoBeforeSnapshot);
+    }
+    updateUndoRedoBtns();
+  } else if (prTouchState.type === 'draw' && prTouchState.noteIdx >= 0) {
+    // 혹시 스냅샷 없이 draw 상태가 생긴 경우를 위한 안전장치
+    PR.notes.splice(prTouchState.noteIdx, 1);
+  }
+
+  resetPRTouchSnapshot();
+  prTouchState.type = 'pinch';
+  prTouchState.noteIdx = -1;
+  PR.selRect = null;
+  drawPR();
+}
+
 prCanvas && setupPRTouch();
 
 let prTouchInitialized = false;
@@ -4182,18 +4228,7 @@ function setupPRTouch() {
     prActiveTouches = prActivePointers.size;
 
     if (prActiveTouches > 1) {
-      // 두 번째 터치 → 소리 재생 타이머 취소
-      if (prTouchState.previewTimer) {
-        clearTimeout(prTouchState.previewTimer);
-        prTouchState.previewTimer = null;
-      }
-      // 진행 중인 노트 그리기 취소 (롤백)
-      if (prTouchState.type === 'draw' && prTouchState.noteIdx >= 0) {
-        PR.notes.splice(prTouchState.noteIdx, 1);
-        drawPR();
-      }
-      prTouchState.type = 'pinch';
-      prTouchState.noteIdx = -1;
+      cancelPRTouchEditForPinch();
       return;
     }
 
@@ -4211,6 +4246,7 @@ function setupPRTouch() {
     prTouchState.startBeat = beat;
     prTouchState.startPitch = pitch;
     prTouchState.moved = false;
+    resetPRTouchSnapshot();
 
     if (PR.selectMode) {
       prTouchState.type = 'select';
@@ -4262,7 +4298,7 @@ function setupPRTouch() {
 
     // 새 노트 즉시 생성
     prTouchState.type = 'draw';
-    prSnapshot(); // 노트 생성 직전 상태 저장
+    prTouchSnapshot(); // 노트 생성 직전 상태 저장
     prTouchState.noteIdx = PR.notes.length;
     PR.notes.push({
       pitch: newPitch,
@@ -4304,7 +4340,7 @@ function setupPRTouch() {
       if (dx2 > 4) {
         if (!prTouchState.moved) {
           prTouchState.moved = true;
-          prSnapshot();
+          prTouchSnapshot();
         }
         const note = PR.notes[prTouchState.noteIdx];
         if (!note) return;
@@ -4327,7 +4363,7 @@ function setupPRTouch() {
       if (dx > 4 || dy > 4) {
         if (!prTouchState.moved) {
           prTouchState.moved = true;
-          prSnapshot(); // 이동 시작 시점에 undo 저장
+          prTouchSnapshot(); // 이동 시작 시점에 undo 저장
         }
         const note = PR.notes[prTouchState.noteIdx];
         if (!note) return;
@@ -4386,7 +4422,7 @@ function setupPRTouch() {
     // move 타입: 탭(안 움직임) → 삭제, 드래그(움직임) → 이동 확정
     if (prTouchState.type === 'move' && prTouchState.noteIdx >= 0) {
       if (!prTouchState.moved) {
-        prSnapshot();
+        prTouchSnapshot();
         PR.notes.splice(prTouchState.noteIdx, 1);
       }
       drawPR();
@@ -4395,7 +4431,7 @@ function setupPRTouch() {
     // resize 타입: 탭(안 움직임) → 삭제, 드래그(움직임) → 리사이즈 확정
     if (prTouchState.type === 'resize' && prTouchState.noteIdx >= 0) {
       if (!prTouchState.moved) {
-        prSnapshot();
+        prTouchSnapshot();
         PR.notes.splice(prTouchState.noteIdx, 1);
       }
       drawPR();
@@ -4418,6 +4454,7 @@ function setupPRTouch() {
 
     prTouchState.type = null;
     prTouchState.noteIdx = -1;
+    resetPRTouchSnapshot();
     PR.selRect = null;
     drawPR();
   });
@@ -4430,6 +4467,7 @@ function setupPRTouch() {
 
   prCanvas.addEventListener('touchstart', e => {
     if (e.touches.length === 2) {
+      cancelPRTouchEditForPinch();
       const rect = prCanvas.getBoundingClientRect();
       const scaleX = prCanvas.width / rect.width;
       const scaleY = prCanvas.height / rect.height;
@@ -4500,10 +4538,17 @@ function setupPRTouch() {
   }, {passive: false});
 
   // Scroll
-  prCanvas.addEventListener('pointercancel', () => {
+  prCanvas.addEventListener('pointercancel', e => {
     prActivePointers.delete(e.pointerId);
     prActiveTouches = prActivePointers.size;
-    prTouchState.type = null;
+    if (prTouchState.type && prTouchState.type !== 'pinch') {
+      cancelPRTouchEditForPinch();
+      return;
+    }
+    if (prActiveTouches === 0) {
+      resetPRTouchSnapshot();
+      prTouchState.type = null;
+    }
   });
 
   prCanvas.addEventListener('wheel', e => {
@@ -5681,7 +5726,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 0.974',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 0.9742',
     () => {}, '확인', ''
   );
 });
