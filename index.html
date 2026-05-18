@@ -671,6 +671,7 @@
   #samplerTrimBtn,
   #samplerPreviewBtn,
   #creditBtn,
+  #sampleProjectBtn,
   #autoSaveSetupBtn,
   .ps-save-btn {
     border-radius: 999px !important;
@@ -1529,6 +1530,7 @@
 <div class="ex-style-010" id="autoSaveStatusLabel">비활성화됨</div>
 </div>
 <button class="ex-style-058" id="creditBtn">ℹ️ 크레딧</button>
+<button class="ex-style-058" id="sampleProjectBtn">📦 샘플 프로젝트 불러오기</button>
 <button class="ps-save-btn" id="psSave">저장</button>
 </div>
 </div>
@@ -5395,6 +5397,8 @@ document.getElementById('fileInput').addEventListener('change', e => {
       normalizeProjectAfterLoad();
       autoSaveEnabled = false;
       autoSaveFileHandle = null;
+      PR.playPos = 0;
+      mainProgressScrollX = 0;
       renderTrackList();
       updateBpmDisplay();
       drawMainProgress();
@@ -5726,8 +5730,45 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 0.9742',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 0.974',
     () => {}, '확인', ''
+  );
+});
+
+async function loadProjectFromObject(nextProject, { resetAutoSave = true } = {}) {
+  project = nextProject;
+  normalizeProjectAfterLoad();
+  if (resetAutoSave) {
+    autoSaveEnabled = false;
+    autoSaveFileHandle = null;
+  }
+  PR.playPos = 0;
+  mainProgressScrollX = 0;
+  renderTrackList();
+  updateBpmDisplay();
+  drawMainProgress();
+}
+
+document.getElementById('sampleProjectBtn').addEventListener('click', () => {
+  showConfirm(
+    '샘플 프로젝트를 불러오면 지금 작업 중인 프로젝트가 사라져요.\n계속할까요?',
+    async () => {
+      try {
+        const res = await fetch('샘플 프로젝트.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const sampleProject = await res.json();
+        await loadProjectFromObject(sampleProject);
+        document.getElementById('projSettings').classList.remove('open');
+        showToast('샘플 프로젝트를 불러왔어요');
+      } catch (err) {
+        showConfirm(
+          '샘플 프로젝트를 불러오지 못했어요.<br><br>index.html과 같은 위치에 <b>샘플 프로젝트.json</b> 파일이 있는지 확인해주세요.',
+          () => {}, '확인', ''
+        );
+        console.error('Sample project load failed:', err);
+      }
+    },
+    '불러오기', '취소'
   );
 });
 

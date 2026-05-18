@@ -1,0 +1,104 @@
+{
+  "name": "초록 햄스터 프로젝트",
+  "bpm": 120,
+  "timeNum": 4,
+  "timeDen": 4,
+  "bars": 16,
+  "tracks": [
+    {
+      "color": "#8965a1",
+      "name": "",
+      "waveType": "wavetable",
+      "wtTypeA": "sine",
+      "wtTypeB": "square",
+      "wtMorph": 0,
+      "wtDataA": null,
+      "wtDataB": null,
+      "noiseMix": 0,
+      "noisePitchFilter": false,
+      "lfo": {
+        "target": "none",
+        "rate": 4,
+        "depth": 50,
+        "wave": "sine"
+      },
+      "adsr": {
+        "a": 0.01,
+        "d": 0.1,
+        "s": 0.7,
+        "r": 0.2
+      },
+      "pan": 64,
+      "volume": 100,
+      "muted": false,
+      "solo": false,
+      "notes": []
+    },
+    {
+      "color": "#9d7de8",
+      "name": "",
+      "waveType": "wavetable",
+      "wtTypeA": "sine",
+      "wtTypeB": "square",
+      "wtMorph": 0,
+      "wtDataA": null,
+      "wtDataB": null,
+      "noiseMix": 0,
+      "noisePitchFilter": false,
+      "lfo": {
+        "target": "none",
+        "rate": 4,
+        "depth": 50,
+        "wave": "sine"
+      },
+      "adsr": {
+        "a": 0.01,
+        "d": 0.1,
+        "s": 0.7,
+        "r": 0.2
+      },
+      "pan": 64,
+      "volume": 100,
+      "muted": false,
+      "solo": false,
+      "notes": [
+        {
+          "pitch": 72,
+          "startBeat": 0,
+          "lenBeats": 0.5,
+          "selected": false
+        },
+        {
+          "pitch": 74,
+          "startBeat": 1,
+          "lenBeats": 0.5,
+          "selected": false
+        },
+        {
+          "pitch": 76,
+          "startBeat": 1.5,
+          "lenBeats": 0.5,
+          "selected": false
+        },
+        {
+          "pitch": 79,
+          "startBeat": 2.5,
+          "lenBeats": 0.5,
+          "selected": false
+        },
+        {
+          "pitch": 80,
+          "startBeat": 3,
+          "lenBeats": 0.5,
+          "selected": false
+        }
+      ],
+      "prView": {
+        "cellH": 48,
+        "beatW": 80,
+        "scrollX": -8,
+        "scrollY": 1239.5
+      }
+    }
+  ]
+}
