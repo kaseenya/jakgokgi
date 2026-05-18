@@ -5753,20 +5753,35 @@ document.getElementById('sampleProjectBtn').addEventListener('click', () => {
   showConfirm(
     '샘플 프로젝트를 불러오면 지금 작업 중인 프로젝트가 사라져요.\n계속할까요?',
     async () => {
+      let sampleProject;
+
+      // 실패창은 fetch/json 단계에서만 띄운다.
+      // 프로젝트 적용 뒤 렌더링/토스트 쪽에서 작은 예외가 나도
+      // 이미 불러온 프로젝트를 "불러오기 실패"로 오인하지 않게 분리한다.
       try {
         const res = await fetch('샘플 프로젝트.json', { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const sampleProject = await res.json();
-        await loadProjectFromObject(sampleProject);
-        document.getElementById('projSettings').classList.remove('open');
-        showExportDoneToast('샘플 프로젝트를 불러왔어요');
+        sampleProject = await res.json();
       } catch (err) {
         showConfirm(
-          '샘플 프로젝트를 불러오지 못했어요.<br><br>index.html과 같은 위치에 <b>샘플 프로젝트.json</b> 파일이 있는지 확인해주세요.',
+          '샘플 프로젝트 파일을 읽지 못했어요.<br><br>index.html과 같은 위치에 <b>샘플 프로젝트.json</b> 파일이 있는지 확인해주세요.',
           () => {}, '확인', ''
         );
-        console.error('Sample project load failed:', err);
+        console.error('Sample project fetch/json failed:', err);
+        return;
       }
+
+      try {
+        await loadProjectFromObject(sampleProject);
+      } catch (err) {
+        // 여기까지 왔으면 파일 읽기는 성공한 상태다.
+        // 일부 렌더링 함수에서 오류가 나도 프로젝트는 이미 교체됐을 수 있으므로 실패창을 띄우지 않는다.
+        console.error('Sample project post-load/render warning:', err);
+      }
+
+      const ps = document.getElementById('projSettings');
+      if (ps) ps.classList.remove('open');
+      showExportDoneToast('샘플 프로젝트를 불러왔어요');
     },
     '불러오기', '취소'
   );
