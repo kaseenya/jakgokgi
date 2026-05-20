@@ -1206,7 +1206,7 @@
   /* ===== THEME SELECTOR PATCH ===== */
   .theme-row {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
     width: 100%;
   }
@@ -1945,6 +1945,229 @@
     text-shadow: 0 0 8px rgba(92,255,141,0.58) !important;
   }
 
+
+
+  /* ===== PIXEL ART / 16-BIT TRACKER THEME ===== */
+  html.theme-pixel {
+    --bg: #0b1020;
+    --bg2: #17213a;
+    --bg3: #263554;
+    --border: #4b5f93;
+    --accent: #42d9c8;
+    --accent2: #ff6b9a;
+    --accent3: #ffd55c;
+    --accent4: #7cff6b;
+    --text: #e5ecff;
+    --text2: #b8c7f0;
+    --text3: #768fc7;
+    --gloss: #263554;
+    --glass-shadow: 4px 4px 0 #080c18;
+    --bubble-shadow: 3px 3px 0 #080c18;
+  }
+
+  html.theme-pixel body {
+    background:
+      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(180deg, #142044 0%, #0b1020 100%) !important;
+    background-size: 8px 8px, 8px 8px, auto !important;
+    color: var(--text) !important;
+    font-smooth: never;
+    -webkit-font-smoothing: none;
+    image-rendering: pixelated;
+  }
+
+  html.theme-pixel body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 4px);
+    opacity: 0.38;
+    z-index: 0;
+  }
+
+  html.theme-pixel .screen,
+  html.theme-pixel #pianoroll {
+    background: linear-gradient(180deg, #142044, #0b1020) !important;
+  }
+
+  html.theme-pixel .topbar,
+  html.theme-pixel .pr-btnbar,
+  html.theme-pixel .pr-btnbar-bottom,
+  html.theme-pixel .pr-timeline,
+  html.theme-pixel .chord-pad,
+  html.theme-pixel .main-progress-wrap,
+  html.theme-pixel .track-item,
+  html.theme-pixel .settings-content,
+  html.theme-pixel .ps-content,
+  html.theme-pixel .menu-panel,
+  html.theme-pixel .rename-box,
+  html.theme-pixel #confirmOverlay > div,
+  html.theme-pixel #audioExportOverlay > div,
+  html.theme-pixel #midiExportOverlay > div {
+    background: var(--bg2) !important;
+    border-color: var(--border) !important;
+    box-shadow: var(--glass-shadow) !important;
+    backdrop-filter: none !important;
+  }
+
+  html.theme-pixel .topbar-btn,
+  html.theme-pixel .pr-btn,
+  html.theme-pixel .chord-pad-btn,
+  html.theme-pixel .wave-type-btn,
+  html.theme-pixel .wt-preset-btn,
+  html.theme-pixel .toggle-btn,
+  html.theme-pixel .ps-touch-btn,
+  html.theme-pixel .rename-btns button,
+  html.theme-pixel #wavePreviewBtn,
+  html.theme-pixel #samplerLoadBtn,
+  html.theme-pixel #samplerTrimBtn,
+  html.theme-pixel #samplerPreviewBtn,
+  html.theme-pixel #creditBtn,
+  html.theme-pixel #sampleProjectBtn,
+  html.theme-pixel #autoSaveSetupBtn,
+  html.theme-pixel .ps-save-btn {
+    background: var(--bg3) !important;
+    border: 2px solid #7187c4 !important;
+    border-radius: 0 !important;
+    color: var(--text) !important;
+    box-shadow: var(--bubble-shadow) !important;
+    text-shadow: 1px 1px 0 #000 !important;
+    image-rendering: pixelated;
+  }
+
+  html.theme-pixel .topbar-btn:active,
+  html.theme-pixel .pr-btn:active,
+  html.theme-pixel .pr-btn.active,
+  html.theme-pixel .chord-pad-btn:active,
+  html.theme-pixel .chord-pad-btn.active,
+  html.theme-pixel .wave-type-btn.active,
+  html.theme-pixel .wt-preset-btn.active,
+  html.theme-pixel .toggle-btn.active,
+  html.theme-pixel .ps-touch-btn.active {
+    background: #42d9c8 !important;
+    border-color: #e5ecff !important;
+    color: #061018 !important;
+    text-shadow: none !important;
+    transform: translate(2px, 2px) !important;
+    box-shadow: 1px 1px 0 #080c18 !important;
+  }
+
+  html.theme-pixel .pr-btn.play-btn,
+  html.theme-pixel .chord-pad-play,
+  html.theme-pixel .transport-btn.playing,
+  html.theme-pixel .transport-btn.loop-active,
+  html.theme-pixel .topbar-btn.loop-active,
+  html.theme-pixel #loopBtn.loop-active,
+  html.theme-pixel #loopBtnPR.loop-active {
+    background: #ffd55c !important;
+    border-color: #fff3b0 !important;
+    color: #1d1600 !important;
+    text-shadow: none !important;
+  }
+
+  html.theme-pixel .transport-btn {
+    color: var(--text2) !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    text-shadow: 1px 1px 0 #000 !important;
+  }
+
+  html.theme-pixel .pr-scroll,
+  html.theme-pixel .tracklist {
+    background:
+      linear-gradient(90deg, rgba(118,143,199,0.16) 1px, transparent 1px),
+      linear-gradient(180deg, rgba(118,143,199,0.12) 1px, transparent 1px),
+      #0d1324 !important;
+    background-size: 16px 16px, 16px 16px, auto !important;
+  }
+
+  html.theme-pixel .pr-keys,
+  html.theme-pixel .pr-timeline-keys,
+  html.theme-pixel .track-left {
+    background: #263554 !important;
+    border-color: var(--border) !important;
+    box-shadow: 3px 0 0 #080c18 !important;
+  }
+
+  html.theme-pixel .pr-key.white {
+    background: #263554 !important;
+    color: #b8c7f0 !important;
+  }
+
+  html.theme-pixel .pr-key.black {
+    background: #111a2e !important;
+    color: #768fc7 !important;
+  }
+
+  html.theme-pixel .track-preview-canvas,
+  html.theme-pixel .wt-draw-canvas,
+  html.theme-pixel .wt-3d-canvas,
+  html.theme-pixel #adsrCanvas,
+  html.theme-pixel #samplerWaveCanvas {
+    background: #0d1324 !important;
+    border: 2px solid #4b5f93 !important;
+    border-radius: 0 !important;
+    box-shadow: 3px 3px 0 #080c18 !important;
+    image-rendering: pixelated;
+  }
+
+  html.theme-pixel .track-name,
+  html.theme-pixel #settingsTrackName,
+  html.theme-pixel #prTrackName {
+    color: #e5ecff !important;
+    text-shadow: 1px 1px 0 #000 !important;
+  }
+
+  html.theme-pixel .track-meta,
+  html.theme-pixel .settings-label,
+  html.theme-pixel .ps-label,
+  html.theme-pixel .chord-pad-label,
+  html.theme-pixel .bpm-display,
+  html.theme-pixel #themeStatusLabel {
+    color: #b8c7f0 !important;
+    text-shadow: 1px 1px 0 #000 !important;
+  }
+
+  html.theme-pixel .ps-input,
+  html.theme-pixel .rename-input,
+  html.theme-pixel .adsr-input,
+  html.theme-pixel select.pr-btn,
+  html.theme-pixel select {
+    background: #0d1324 !important;
+    border: 2px solid #4b5f93 !important;
+    border-radius: 0 !important;
+    color: #e5ecff !important;
+    box-shadow: inset 2px 2px 0 #080c18 !important;
+  }
+
+  html.theme-pixel input[type=range] {
+    height: 10px !important;
+    border-radius: 0 !important;
+    background: #0d1324 !important;
+    border: 2px solid #4b5f93 !important;
+    box-shadow: none !important;
+  }
+
+  html.theme-pixel input[type=range]::-webkit-slider-thumb {
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 0 !important;
+    background: #42d9c8 !important;
+    border: 2px solid #e5ecff !important;
+    box-shadow: 2px 2px 0 #080c18 !important;
+  }
+
+  html.theme-pixel #prToast,
+  html.theme-pixel #backToast {
+    background: #263554 !important;
+    color: #e5ecff !important;
+    border: 2px solid #7187c4 !important;
+    border-radius: 0 !important;
+    box-shadow: 4px 4px 0 #080c18 !important;
+  }
+
 </style>
 </head>
 <body>
@@ -2281,6 +2504,7 @@
 <button class="ps-touch-btn theme-btn" data-theme="theme-typewriter" id="themeTypewriterBtn">TYPE</button>
 <button class="ps-touch-btn theme-btn" data-theme="theme-pt" id="themePtBtn">PT</button>
 <button class="ps-touch-btn theme-btn" data-theme="theme-crt-green" id="themeCrtGreenBtn">CRT</button>
+<button class="ps-touch-btn theme-btn" data-theme="theme-pixel" id="themePixelBtn">PIXEL</button>
 </div>
 <div class="ex-style-010" id="themeStatusLabel">현재 테마: AERO</div>
 </div>
@@ -3592,14 +3816,15 @@ let project = {
 
 let currentTrackIdx = -1;
 
-const THEME_CLASSES = ['theme-aero', 'theme-dark', 'theme-typewriter', 'theme-pt', 'theme-crt-green'];
+const THEME_CLASSES = ['theme-aero', 'theme-dark', 'theme-typewriter', 'theme-pt', 'theme-crt-green', 'theme-pixel'];
 const THEME_STORAGE_KEY = 'composerTheme';
 const THEME_LABELS = {
   'theme-aero': 'AERO',
   'theme-dark': 'DARK',
   'theme-typewriter': 'TYPEWRITER',
   'theme-pt': 'PT',
-  'theme-crt-green': 'CRT GREEN LAB'
+  'theme-crt-green': 'CRT GREEN LAB',
+  'theme-pixel': 'PIXEL'
 };
 
 const CANVAS_THEMES = {
@@ -3744,6 +3969,36 @@ const CANVAS_THEMES = {
     playhead: '#ffffff',
     playheadSoft: 'rgba(125,255,106,0.68)',
     divider: 'rgba(92,255,141,0.22)'
+  },
+  'theme-pixel': {
+    previewTop: '#1b2540',
+    previewBottom: '#0d1324',
+    previewStroke: '#3f5d99',
+    mainTop: '#16213a',
+    mainBottom: '#0a1020',
+    leftTop: '#263554',
+    leftBottom: '#131c31',
+    rowWhite: '#18243c',
+    rowBlack: '#101827',
+    rowLine: 'rgba(118, 143, 199, 0.34)',
+    cLine: 'rgba(255, 213, 92, 0.46)',
+    measureLine: 'rgba(255, 213, 92, 0.56)',
+    beatLine: 'rgba(118, 143, 199, 0.32)',
+    halfLine: 'rgba(118, 143, 199, 0.22)',
+    subLine: 'rgba(118, 143, 199, 0.15)',
+    timelineBg: '#131c31',
+    timelineMeasure: 'rgba(255, 213, 92, 0.64)',
+    timelineBeat: 'rgba(118, 143, 199, 0.28)',
+    label: '#b8c7f0',
+    note: '#42d9c8',
+    noteStroke: '#0b1020',
+    noteText: '#061018',
+    selectedNote: '#ff6b9a',
+    selectedStroke: '#0b1020',
+    selectedNoteText: '#1b0610',
+    playhead: '#ffd55c',
+    playheadSoft: 'rgba(255, 213, 92, 0.58)',
+    divider: 'rgba(118, 143, 199, 0.25)'
   }
 };
 
@@ -6706,7 +6961,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 0.99',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 0.98',
     () => {}, '확인', ''
   );
 });
