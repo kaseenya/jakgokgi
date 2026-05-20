@@ -6412,15 +6412,59 @@ document.getElementById('playBtn').addEventListener('click', () => {
     document.getElementById('playBtn').classList.add('playing');
   }
 });
-document.getElementById('stopBtn').addEventListener('click', () => {
-  stopPlayback();
+function resetTransportAfterStop() {
   PR.playPos = 0;
   mainProgressScrollX = 0;
-  document.getElementById('playBtn').textContent = '▶';
-  document.getElementById('playBtn').classList.remove('playing');
+  const playBtn = document.getElementById('playBtn');
+  if (playBtn) {
+    playBtn.textContent = '▶';
+    playBtn.classList.remove('playing');
+  }
+  resetPRPlayBtns();
   drawMainProgress();
   refreshAllPreviews();
   if (prCtx) { drawPR(); drawTimeline(); }
+}
+
+function panicStopAllSound() {
+  stopPlayback();
+  // previewNote / samplerPreview처럼 activeOscs에 등록되지 않은 소리까지 끊기 위해
+  // AudioContext 자체를 닫고 다음 재생 때 새로 만든다.
+  if (audioCtx) {
+    const ctxToClose = audioCtx;
+    audioCtx = null;
+    masterGain = null;
+    masterLimiter = null;
+    try { ctxToClose.close(); } catch(e) {}
+  }
+  resetTransportAfterStop();
+  showExportDoneToast('모든 사운드를 정지했어요');
+}
+
+const mainStopBtn = document.getElementById('stopBtn');
+let stopHoldTimer = null;
+let stopHoldFired = false;
+
+mainStopBtn.addEventListener('pointerdown', () => {
+  stopHoldFired = false;
+  clearTimeout(stopHoldTimer);
+  stopHoldTimer = setTimeout(() => {
+    stopHoldFired = true;
+    panicStopAllSound();
+  }, 1000);
+});
+mainStopBtn.addEventListener('pointerup', () => clearTimeout(stopHoldTimer));
+mainStopBtn.addEventListener('pointerleave', () => clearTimeout(stopHoldTimer));
+mainStopBtn.addEventListener('pointercancel', () => clearTimeout(stopHoldTimer));
+
+mainStopBtn.addEventListener('click', e => {
+  if (stopHoldFired) {
+    e.preventDefault();
+    stopHoldFired = false;
+    return;
+  }
+  stopPlayback();
+  resetTransportAfterStop();
 });
 
 // 반복 토글 (메인 + 피아노롤 양쪽 버튼 공유)
@@ -6961,7 +7005,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 0.99',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 0.98',
     () => {}, '확인', ''
   );
 });
@@ -7037,8 +7081,11 @@ document.querySelectorAll('.theme-btn').forEach(btn => {
 
 document.getElementById('psSave').addEventListener('click', () => {
   // 터치 보정 값 저장
-  const activeBtn = document.querySelector('.ps-touch-btn.active');
-  if (activeBtn) touchOffsetBeats = parseFloat(activeBtn.dataset.val);
+  const activeBtn = document.querySelector('.ps-touch-btn:not(.theme-btn).active');
+  if (activeBtn) {
+    const nextTouchOffset = parseFloat(activeBtn.dataset.val);
+    if (Number.isFinite(nextTouchOffset)) touchOffsetBeats = nextTouchOffset;
+  }
   let bpm = parseInt(document.getElementById('bpmInput').value);
   bpm = Math.max(1, Math.min(999, bpm || 120));
   let num = parseInt(document.getElementById('tsNumInput').value) || 4;
@@ -7051,11 +7098,16 @@ document.getElementById('psSave').addEventListener('click', () => {
   project.timeDen = den;
   project.bars = bars;
   project.theme = getCurrentTheme();
+  // 혹시 이전 버전에서 잘못 저장된 터치 보정값이 있으면 BPM 변경 시 같이 정리
+  if (!Number.isFinite(touchOffsetBeats)) touchOffsetBeats = 0;
   // 박자 변경 시 스냅을 1/4로 리셋
   PR.snapIdx = 2;
   const snapBtn = document.getElementById('snapBtn');
   if (snapBtn) snapBtn.value = PR.snapIdx;
   updateBpmDisplay();
+  refreshAllPreviews();
+  drawMainProgress();
+  if (prCtx) { drawPR(); drawTimeline(); }
   document.getElementById('projSettings').classList.remove('open');
 });
 
