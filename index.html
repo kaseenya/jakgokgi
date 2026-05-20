@@ -1099,6 +1099,22 @@
     box-shadow: 0 0 18px rgba(255,92,168,0.38), inset 0 1px 0 rgba(255,255,255,0.92) !important;
   }
 
+
+  /* ===== LOOP BUTTON ACTIVE STATE PATCH =====
+     Aero 테마의 .topbar-btn 기본 배경이 !important라서
+     피아노롤 반복 버튼의 loop-active 표시가 묻히던 문제 수정. */
+  .transport-btn.loop-active,
+  .topbar-btn.loop-active,
+  #loopBtn.loop-active,
+  #loopBtnPR.loop-active {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.96), rgba(166,255,176,0.72) 48%, rgba(47,213,78,0.74) 49%, rgba(139,255,165,0.76)) !important;
+    border-color: rgba(255,255,255,0.96) !important;
+    color: #0c4a1f !important;
+    box-shadow: 0 0 18px rgba(98,232,110,0.42), inset 0 1px 0 rgba(255,255,255,0.92) !important;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.82) !important;
+  }
+
   /* ===== EXTRACTED HTML UTILITY STYLES =====
      기존 HTML의 inline style을 단일 파일 안의 CSS 클래스로 옮긴 영역.
      JS가 여닫는 display:none 상태만 안전을 위해 inline에 남김. */
@@ -5730,7 +5746,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 0.9743',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 0.98',
     () => {}, '확인', ''
   );
 });
