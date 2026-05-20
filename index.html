@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="ko">
+<html class="theme-aero" lang="ko">
 <head>
 <meta charset="utf-8"/>
 <meta content="#0e0e14" name="theme-color"/>
@@ -586,7 +586,7 @@
 
 
   /* ===== FRUTIGER AERO / Y2K GLASS THEME ===== */
-  :root {
+  html.theme-aero{
     --bg: #8fd9ff;
     --bg2: rgba(224, 248, 255, 0.72);
     --bg3: rgba(255, 255, 255, 0.56);
@@ -603,7 +603,7 @@
     --bubble-shadow: 0 4px 14px rgba(0, 120, 210, 0.22), inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -8px 16px rgba(0,150,255,0.10);
   }
 
-  body {
+  html.theme-aero body{
     background:
       radial-gradient(circle at 12% 8%, rgba(255,255,255,0.96), transparent 13%),
       radial-gradient(circle at 82% 14%, rgba(255,255,255,0.55), transparent 10%),
@@ -614,7 +614,7 @@
     letter-spacing: -0.015em;
   }
 
-  body::before {
+  html.theme-aero body::before{
     content: "";
     position: fixed;
     inset: 0;
@@ -626,54 +626,54 @@
     z-index: 0;
   }
 
-  .screen {
+  html.theme-aero .screen{
     background:
       radial-gradient(circle at 50% 0%, rgba(255,255,255,0.42), transparent 28%),
       linear-gradient(180deg, rgba(225,250,255,0.46), rgba(119,210,255,0.18)) !important;
   }
 
-  .topbar,
-  .pr-btnbar,
-  .pr-btnbar-bottom,
-  .pr-timeline,
-  .chord-pad,
-  .main-progress-wrap,
-  .track-item,
-  .settings-content,
-  .ps-content {
+  html.theme-aero .topbar,
+  html.theme-aero .pr-btnbar,
+  html.theme-aero .pr-btnbar-bottom,
+  html.theme-aero .pr-timeline,
+  html.theme-aero .chord-pad,
+  html.theme-aero .main-progress-wrap,
+  html.theme-aero .track-item,
+  html.theme-aero .settings-content,
+  html.theme-aero .ps-content{
     background: var(--bg2) !important;
     border-color: rgba(255,255,255,0.78) !important;
     box-shadow: var(--glass-shadow);
     backdrop-filter: blur(14px) saturate(1.35);
   }
 
-  .topbar {
+  html.theme-aero .topbar{
     border-bottom: 1px solid rgba(255,255,255,0.9) !important;
     background:
       linear-gradient(180deg, rgba(255,255,255,0.82), rgba(170,230,255,0.58) 52%, rgba(94,196,255,0.45)) !important;
   }
 
-  .pr-btnbar,
-  .pr-btnbar-bottom {
+  html.theme-aero .pr-btnbar,
+  html.theme-aero .pr-btnbar-bottom{
     gap: 5px !important;
   }
 
-  .topbar-btn,
-  .pr-btn,
-  .chord-pad-btn,
-  .wave-type-btn,
-  .wt-preset-btn,
-  .toggle-btn,
-  .ps-touch-btn,
-  .rename-btns button,
-  #wavePreviewBtn,
-  #samplerLoadBtn,
-  #samplerTrimBtn,
-  #samplerPreviewBtn,
-  #creditBtn,
-  #sampleProjectBtn,
-  #autoSaveSetupBtn,
-  .ps-save-btn {
+  html.theme-aero .topbar-btn,
+  html.theme-aero .pr-btn,
+  html.theme-aero .chord-pad-btn,
+  html.theme-aero .wave-type-btn,
+  html.theme-aero .wt-preset-btn,
+  html.theme-aero .toggle-btn,
+  html.theme-aero .ps-touch-btn,
+  html.theme-aero .rename-btns button,
+  html.theme-aero #wavePreviewBtn,
+  html.theme-aero #samplerLoadBtn,
+  html.theme-aero #samplerTrimBtn,
+  html.theme-aero #samplerPreviewBtn,
+  html.theme-aero #creditBtn,
+  html.theme-aero #sampleProjectBtn,
+  html.theme-aero #autoSaveSetupBtn,
+  html.theme-aero .ps-save-btn{
     border-radius: 999px !important;
     background: var(--gloss) !important;
     border: 1px solid rgba(255,255,255,0.84) !important;
@@ -683,15 +683,15 @@
     transition: transform 0.10s, filter 0.12s, box-shadow 0.12s;
   }
 
-  .topbar-btn:active,
-  .pr-btn:active,
-  .pr-btn.active,
-  .chord-pad-btn:active,
-  .chord-pad-btn.active,
-  .wave-type-btn.active,
-  .wt-preset-btn.active,
-  .toggle-btn.active,
-  .ps-touch-btn.active {
+  html.theme-aero .topbar-btn:active,
+  html.theme-aero .pr-btn:active,
+  html.theme-aero .pr-btn.active,
+  html.theme-aero .chord-pad-btn:active,
+  html.theme-aero .chord-pad-btn.active,
+  html.theme-aero .wave-type-btn.active,
+  html.theme-aero .wt-preset-btn.active,
+  html.theme-aero .toggle-btn.active,
+  html.theme-aero .ps-touch-btn.active{
     background:
       linear-gradient(180deg, rgba(255,255,255,0.96), rgba(83,207,255,0.74) 48%, rgba(0,143,255,0.74) 49%, rgba(83,222,255,0.78)) !important;
     color: #001c34 !important;
@@ -700,9 +700,9 @@
     box-shadow: 0 0 18px rgba(0,170,255,0.40), inset 0 1px 0 rgba(255,255,255,0.92);
   }
 
-  .pr-btn.play-btn,
-  .chord-pad-play,
-  .transport-btn.playing {
+  html.theme-aero .pr-btn.play-btn,
+  html.theme-aero .chord-pad-play,
+  html.theme-aero .transport-btn.playing{
     background:
       linear-gradient(180deg, rgba(255,255,255,0.96), rgba(166,255,176,0.72) 48%, rgba(47,213,78,0.74) 49%, rgba(139,255,165,0.76)) !important;
     border-color: rgba(255,255,255,0.96) !important;
@@ -710,26 +710,26 @@
     box-shadow: 0 0 18px rgba(98,232,110,0.42), inset 0 1px 0 rgba(255,255,255,0.92);
   }
 
-  .transport-btn {
+  html.theme-aero .transport-btn{
     color: #1b597c !important;
     background: transparent !important;
     text-shadow: 0 1px 0 rgba(255,255,255,0.88);
     border-radius: 999px !important;
   }
 
-  .transport-btn:active {
+  html.theme-aero .transport-btn:active{
     background: rgba(255,255,255,0.56) !important;
     color: #007ee5 !important;
   }
 
-  #pianoroll {
+  html.theme-aero #pianoroll{
     background:
       radial-gradient(circle at 18% 12%, rgba(255,255,255,0.60), transparent 22%),
       radial-gradient(circle at 86% 90%, rgba(118,255,191,0.26), transparent 26%),
       linear-gradient(180deg, #a7e9ff, #eafcff) !important;
   }
 
-  .pr-scroll {
+  html.theme-aero .pr-scroll{
     background:
       linear-gradient(90deg, rgba(0,118,190,0.08) 1px, transparent 1px),
       linear-gradient(180deg, rgba(0,118,190,0.06) 1px, transparent 1px),
@@ -737,73 +737,73 @@
     border-radius: 0 !important;
   }
 
-  #prCanvas,
-  #timelineCanvas,
-  .main-progress-canvas {
+  html.theme-aero #prCanvas,
+  html.theme-aero #timelineCanvas,
+  html.theme-aero .main-progress-canvas{
     filter: saturate(1.12) contrast(1.02);
   }
 
-  .pr-keys,
-  .pr-timeline-keys {
+  html.theme-aero .pr-keys,
+  html.theme-aero .pr-timeline-keys{
     background:
       linear-gradient(180deg, rgba(255,255,255,0.80), rgba(166,230,255,0.56)) !important;
     border-color: rgba(255,255,255,0.82) !important;
     box-shadow: 6px 0 16px rgba(0, 110, 180, 0.16), inset -1px 0 0 rgba(0,120,200,0.12);
   }
 
-  .pr-key.white {
+  html.theme-aero .pr-key.white{
     background: linear-gradient(180deg, rgba(255,255,255,0.76), rgba(221,250,255,0.58)) !important;
     color: #5180a0 !important;
   }
 
-  .pr-key.black {
+  html.theme-aero .pr-key.black{
     background: linear-gradient(180deg, rgba(49,82,112,0.82), rgba(16,37,62,0.82)) !important;
     color: #c7efff !important;
   }
 
-  .pr-key:active {
+  html.theme-aero .pr-key:active{
     background: linear-gradient(180deg, #ffffff, #5ed8ff) !important;
     color: #003a66 !important;
   }
 
-  .tracklist {
+  html.theme-aero .tracklist{
     background:
       radial-gradient(circle at 15% 12%, rgba(255,255,255,0.55), transparent 23%),
       linear-gradient(180deg, rgba(235,252,255,0.38), rgba(127,215,255,0.22)) !important;
   }
 
-  .track-item {
+  html.theme-aero .track-item{
     background:
       linear-gradient(180deg, rgba(255,255,255,0.52), rgba(187,237,255,0.36)) !important;
     border-bottom: 1px solid rgba(255,255,255,0.72) !important;
   }
 
-  .track-left {
+  html.theme-aero .track-left{
     background: linear-gradient(180deg, rgba(255,255,255,0.62), rgba(170,231,255,0.42)) !important;
     border-right-color: rgba(255,255,255,0.72) !important;
   }
 
-  .track-name,
-  #settingsTrackName,
-  #prTrackName {
+  html.theme-aero .track-name,
+  html.theme-aero #settingsTrackName,
+  html.theme-aero #prTrackName{
     color: #113a5a !important;
     text-shadow: 0 1px 0 rgba(255,255,255,0.80);
   }
 
-  .track-meta,
-  .settings-label,
-  .ps-label,
-  .chord-pad-label,
-  .bpm-display {
+  html.theme-aero .track-meta,
+  html.theme-aero .settings-label,
+  html.theme-aero .ps-label,
+  html.theme-aero .chord-pad-label,
+  html.theme-aero .bpm-display{
     color: #5b86a3 !important;
     text-shadow: 0 1px 0 rgba(255,255,255,0.70);
   }
 
-  .track-preview-canvas,
-  .wt-draw-canvas,
-  .wt-3d-canvas,
-  #adsrCanvas,
-  #samplerWaveCanvas {
+  html.theme-aero .track-preview-canvas,
+  html.theme-aero .wt-draw-canvas,
+  html.theme-aero .wt-3d-canvas,
+  html.theme-aero #adsrCanvas,
+  html.theme-aero #samplerWaveCanvas{
     border-radius: 16px !important;
     background:
       radial-gradient(circle at 20% 12%, rgba(255,255,255,0.88), transparent 35%),
@@ -812,13 +812,13 @@
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.90), 0 5px 16px rgba(0,100,180,0.14);
   }
 
-  .chord-pad {
+  html.theme-aero .chord-pad{
     background:
       linear-gradient(180deg, rgba(255,255,255,0.72), rgba(162,231,255,0.62)) !important;
     border-top: 1px solid rgba(255,255,255,0.86) !important;
   }
 
-  .chord-pad-toggle {
+  html.theme-aero .chord-pad-toggle{
     background:
       linear-gradient(90deg, rgba(255,255,255,0.88), rgba(123,223,255,0.72), rgba(166,255,182,0.66)) !important;
     color: #1d5d82 !important;
@@ -827,11 +827,11 @@
     letter-spacing: 1px;
   }
 
-  .menu-panel,
-  .rename-box,
-  #confirmOverlay > div,
-  #audioExportOverlay > div,
-  #midiExportOverlay > div {
+  html.theme-aero .menu-panel,
+  html.theme-aero .rename-box,
+  html.theme-aero #confirmOverlay > div,
+  html.theme-aero #audioExportOverlay > div,
+  html.theme-aero #midiExportOverlay > div{
     background:
       linear-gradient(180deg, rgba(255,255,255,0.82), rgba(171,232,255,0.72)) !important;
     border: 1px solid rgba(255,255,255,0.88) !important;
@@ -841,21 +841,21 @@
     color: var(--text) !important;
   }
 
-  .menu-item {
+  html.theme-aero .menu-item{
     border-bottom-color: rgba(255,255,255,0.56) !important;
     border-radius: 0 !important;
     box-shadow: none !important;
   }
 
-  .menu-item:active {
+  html.theme-aero .menu-item:active{
     background: rgba(77,198,255,0.48) !important;
   }
 
-  .ps-input,
-  .rename-input,
-  .adsr-input,
-  select.pr-btn,
-  select {
+  html.theme-aero .ps-input,
+  html.theme-aero .rename-input,
+  html.theme-aero .adsr-input,
+  html.theme-aero select.pr-btn,
+  html.theme-aero select{
     background: rgba(255,255,255,0.64) !important;
     border: 1px solid rgba(255,255,255,0.84) !important;
     color: #12304a !important;
@@ -863,7 +863,7 @@
     box-shadow: inset 0 2px 6px rgba(0,95,160,0.12), 0 1px 0 rgba(255,255,255,0.86);
   }
 
-  input[type=range] {
+  html.theme-aero input[type=range]{
     height: 8px !important;
     border-radius: 999px !important;
     background:
@@ -872,7 +872,7 @@
     box-shadow: inset 0 1px 4px rgba(0,80,140,0.22);
   }
 
-  input[type=range]::-webkit-slider-thumb {
+  html.theme-aero input[type=range]::-webkit-slider-thumb{
     width: 22px !important;
     height: 22px !important;
     background:
@@ -881,14 +881,14 @@
     box-shadow: 0 3px 10px rgba(0,120,210,0.34), inset 0 1px 0 rgba(255,255,255,0.94) !important;
   }
 
-  .danger-btn {
+  html.theme-aero .danger-btn{
     color: #b01855 !important;
     background:
       linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,153,197,0.48)) !important;
     border-color: rgba(255,255,255,0.84) !important;
   }
 
-  #prToast {
+  html.theme-aero #prToast{
     background:
       linear-gradient(180deg, rgba(255,255,255,0.88), rgba(159,228,255,0.78)) !important;
     color: #12304a !important;
@@ -899,199 +899,199 @@
     backdrop-filter: blur(14px);
   }
 
-  #autoSaveIndicator {
+  html.theme-aero #autoSaveIndicator{
     color: #0b9e59 !important;
   }
 
-  ::-webkit-scrollbar-thumb {
+  html.theme-aero ::-webkit-scrollbar-thumb{
     background:
       linear-gradient(180deg, rgba(255,255,255,0.86), rgba(61,190,255,0.58)) !important;
     border-radius: 999px !important;
   }
 
-  ::selection {
+  html.theme-aero ::selection{
     background: rgba(37,167,255,0.35);
   }
 
 
   /* ===== AERO LIGHT ROLL PATCH ===== */
-  .pr-scroll {
+  html.theme-aero .pr-scroll{
     background:
       radial-gradient(circle at 22% 8%, rgba(255,255,255,0.70), transparent 28%),
       linear-gradient(180deg, rgba(248,254,255,0.94), rgba(190,239,255,0.82)) !important;
   }
 
-  .track-preview-canvas,
-  .wt-draw-canvas,
-  .wt-3d-canvas,
-  #adsrCanvas,
-  #samplerWaveCanvas {
+  html.theme-aero .track-preview-canvas,
+  html.theme-aero .wt-draw-canvas,
+  html.theme-aero .wt-3d-canvas,
+  html.theme-aero #adsrCanvas,
+  html.theme-aero #samplerWaveCanvas{
     background:
       radial-gradient(circle at 20% 12%, rgba(255,255,255,0.95), transparent 38%),
       linear-gradient(180deg, rgba(245,254,255,0.94), rgba(166,229,255,0.72)) !important;
   }
 
-  .pr-timeline {
+  html.theme-aero .pr-timeline{
     background:
       linear-gradient(180deg, rgba(255,255,255,0.84), rgba(173,235,255,0.68)) !important;
   }
 
-  .pr-keys,
-  .pr-timeline-keys {
+  html.theme-aero .pr-keys,
+  html.theme-aero .pr-timeline-keys{
     background:
       linear-gradient(180deg, rgba(255,255,255,0.90), rgba(175,235,255,0.70)) !important;
   }
 
-  #prCanvas,
-  #timelineCanvas,
-  .track-preview-canvas {
+  html.theme-aero #prCanvas,
+  html.theme-aero #timelineCanvas,
+  html.theme-aero .track-preview-canvas{
     mix-blend-mode: normal;
   }
 
 
   /* ===== LANDSCAPE ADAPTIVE PATCH ===== */
-  body.landscape-layout {
+  html.theme-aero body.landscape-layout{
     --topbar-h: 50px;
     --timeline-h: 24px;
     --btnbar-h: 40px;
     --key-w: 38px;
   }
 
-  body.landscape-layout .topbar {
+  html.theme-aero body.landscape-layout .topbar{
     height: var(--topbar-h) !important;
     padding: 0 10px !important;
   }
 
-  body.landscape-layout .topbar-btn {
+  html.theme-aero body.landscape-layout .topbar-btn{
     width: 34px !important;
     height: 34px !important;
     font-size: 16px !important;
   }
 
-  body.landscape-layout .transport-btn {
+  html.theme-aero body.landscape-layout .transport-btn{
     font-size: 18px !important;
     padding: 2px 8px !important;
   }
 
-  body.landscape-layout .pr-btnbar {
+  html.theme-aero body.landscape-layout .pr-btnbar{
     padding: 4px 8px !important;
     gap: 4px !important;
   }
 
-  body.landscape-layout .pr-btnbar-row {
+  html.theme-aero body.landscape-layout .pr-btnbar-row{
     height: 28px !important;
     gap: 6px !important;
   }
 
-  body.landscape-layout .pr-btn,
-  body.landscape-layout .chord-pad-btn {
+  html.theme-aero body.landscape-layout .pr-btn,
+  html.theme-aero body.landscape-layout .chord-pad-btn{
     height: 28px !important;
     font-size: 10px !important;
     border-radius: 14px !important;
     max-width: 190px;
   }
 
-  body.landscape-layout .pr-btnbar-row .pr-btn {
+  html.theme-aero body.landscape-layout .pr-btnbar-row .pr-btn{
     max-width: none;
   }
 
-  body.landscape-layout .pr-topbar-title {
+  html.theme-aero body.landscape-layout .pr-topbar-title{
     font-size: 10px !important;
   }
 
-  body.landscape-layout #prTrackName {
+  html.theme-aero body.landscape-layout #prTrackName{
     font-size: 11px !important;
   }
 
-  body.landscape-layout #prTitle {
+  html.theme-aero body.landscape-layout #prTitle{
     font-size: 9px !important;
   }
 
-  body.landscape-layout .pr-timeline {
+  html.theme-aero body.landscape-layout .pr-timeline{
     height: var(--timeline-h) !important;
   }
 
-  body.landscape-layout .pr-key {
+  html.theme-aero body.landscape-layout .pr-key{
     font-size: 8px !important;
   }
 
-  body.landscape-layout .chord-pad-toggle {
+  html.theme-aero body.landscape-layout .chord-pad-toggle{
     height: 26px !important;
     font-size: 10px !important;
   }
 
-  body.landscape-layout .chord-pad-body {
+  html.theme-aero body.landscape-layout .chord-pad-body{
     padding: 5px 8px !important;
     gap: 4px !important;
   }
 
-  body.landscape-layout .chord-pad-row {
+  html.theme-aero body.landscape-layout .chord-pad-row{
     gap: 6px !important;
   }
 
-  body.landscape-layout .chord-pad-label {
+  html.theme-aero body.landscape-layout .chord-pad-label{
     width: 44px !important;
     font-size: 9px !important;
   }
 
-  body.landscape-layout .chord-pad-buttons {
+  html.theme-aero body.landscape-layout .chord-pad-buttons{
     gap: 5px !important;
   }
 
-  body.landscape-layout #chordExtButtons {
+  html.theme-aero body.landscape-layout #chordExtButtons{
     grid-template-columns: repeat(8, minmax(0, 1fr)) !important;
     gap: 5px !important;
   }
 
-  body.landscape-layout .pr-btnbar-bottom {
+  html.theme-aero body.landscape-layout .pr-btnbar-bottom{
     height: var(--btnbar-h) !important;
     padding: 0 8px !important;
     gap: 6px !important;
   }
 
-  body.landscape-layout .track-left {
+  html.theme-aero body.landscape-layout .track-left{
     width: 118px !important;
   }
 
-  body.landscape-layout .track-item {
+  html.theme-aero body.landscape-layout .track-item{
     height: 50px !important;
   }
 
-  body.landscape-layout .track-name {
+  html.theme-aero body.landscape-layout .track-name{
     font-size: 11px !important;
   }
 
-  body.landscape-layout .track-meta {
+  html.theme-aero body.landscape-layout .track-meta{
     font-size: 8px !important;
   }
 
-  body.landscape-layout .main-progress-wrap {
+  html.theme-aero body.landscape-layout .main-progress-wrap{
     height: 28px !important;
   }
 
-  body.landscape-layout .bpm-display,
-  body.landscape-layout #projectNameDisplay {
+  html.theme-aero body.landscape-layout .bpm-display,
+  html.theme-aero body.landscape-layout #projectNameDisplay{
     font-size: 10px !important;
   }
 
-  body.landscape-layout .settings-content,
-  body.landscape-layout .ps-content {
+  html.theme-aero body.landscape-layout .settings-content,
+  html.theme-aero body.landscape-layout .ps-content{
     padding: 12px !important;
   }
 
   /* ===== PREVIEW FINAL PATCH ===== */
-  .track-preview-canvas {
+  html.theme-aero .track-preview-canvas{
     border-radius: 8px !important;
     background:
       linear-gradient(180deg, rgba(245,254,255,0.94), rgba(166,229,255,0.72)) !important;
   }
-  body.landscape-layout .track-preview-canvas {
+  html.theme-aero body.landscape-layout .track-preview-canvas{
     border-radius: 7px !important;
   }
 
 
   /* ===== SOLO BUTTON STATE PATCH ===== */
-  .toggle-btn.solo-active {
+  html.theme-aero .toggle-btn.solo-active{
     background:
       linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,156,205,0.72) 48%, rgba(255,92,168,0.76) 49%, rgba(255,177,219,0.78)) !important;
     border-color: rgba(255,255,255,0.96) !important;
@@ -1103,10 +1103,10 @@
   /* ===== LOOP BUTTON ACTIVE STATE PATCH =====
      Aero 테마의 .topbar-btn 기본 배경이 !important라서
      피아노롤 반복 버튼의 loop-active 표시가 묻히던 문제 수정. */
-  .transport-btn.loop-active,
-  .topbar-btn.loop-active,
-  #loopBtn.loop-active,
-  #loopBtnPR.loop-active {
+  html.theme-aero .transport-btn.loop-active,
+  html.theme-aero .topbar-btn.loop-active,
+  html.theme-aero #loopBtn.loop-active,
+  html.theme-aero #loopBtnPR.loop-active{
     background:
       linear-gradient(180deg, rgba(255,255,255,0.96), rgba(166,255,176,0.72) 48%, rgba(47,213,78,0.74) 49%, rgba(139,255,165,0.76)) !important;
     border-color: rgba(255,255,255,0.96) !important;
@@ -1202,6 +1202,749 @@
   .ex-style-082 { flex:1;padding:10px;border-radius:8px;border:none;background:var(--accent2);color:#fff;font-family:'Consolas, D2Coding, monospace',monospace;font-size:12px;cursor:pointer; }
   .ex-style-083 { position:fixed;inset:0;z-index:500;align-items:center;justify-content:center;pointer-events:auto; }
   .ex-style-084 { background:rgba(255,255,255,0.88);color:#12304a;border:1px solid rgba(255,255,255,0.94);border-radius:18px;padding:18px 28px;font-size:16px;font-weight:bold;box-shadow:0 18px 44px rgba(0,92,150,0.26), inset 0 1px 0 rgba(255,255,255,0.92);backdrop-filter:blur(14px) saturate(1.35);text-align:center; }
+
+  /* ===== THEME SELECTOR PATCH ===== */
+  .theme-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+  .theme-btn {
+    min-height: 40px;
+  }
+  .theme-btn.active::after {
+    content: " ✓";
+    font-weight: 700;
+  }
+  html.theme-dark #prToast,
+  html.theme-dark #backToast {
+    background: rgba(30,30,50,0.95) !important;
+    color: #fff !important;
+    border: 1px solid var(--border) !important;
+  }
+
+
+  /* ===== TYPEWRITER / COLD WAR MUSIC LAB THEME ===== */
+  html.theme-typewriter {
+    --bg: #cfc2a4;
+    --bg2: rgba(238, 226, 199, 0.88);
+    --bg3: rgba(248, 238, 216, 0.88);
+    --border: rgba(85, 70, 45, 0.42);
+    --accent: #7f1d1d;
+    --accent2: #9d174d;
+    --accent3: #2f6b3f;
+    --accent4: #b0892f;
+    --text: #2c2418;
+    --text2: #5a4a34;
+    --text3: #8a7658;
+    --gloss: linear-gradient(180deg, rgba(255,250,235,0.96), rgba(232,215,181,0.86));
+    --glass-shadow: 0 8px 18px rgba(62, 45, 20, 0.18), inset 0 1px 0 rgba(255,255,255,0.58);
+    --bubble-shadow: 0 3px 0 rgba(70,52,28,0.34), 0 8px 16px rgba(62,45,20,0.16), inset 0 1px 0 rgba(255,255,255,0.62);
+  }
+
+  html.theme-typewriter body {
+    background:
+      radial-gradient(circle at 12% 10%, rgba(255,255,255,0.32), transparent 18%),
+      radial-gradient(circle at 84% 18%, rgba(90,60,25,0.08), transparent 18%),
+      repeating-linear-gradient(0deg, rgba(48,34,18,0.035) 0 1px, transparent 1px 5px),
+      repeating-linear-gradient(90deg, rgba(48,34,18,0.025) 0 1px, transparent 1px 7px),
+      linear-gradient(180deg, #d9caa8 0%, #efe0bf 42%, #b9aa8a 100%) !important;
+    color: var(--text) !important;
+    letter-spacing: 0.01em;
+  }
+
+  html.theme-typewriter body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 18% 28%, rgba(90,60,25,0.07), transparent 1.8%),
+      radial-gradient(circle at 72% 52%, rgba(90,60,25,0.06), transparent 2.2%),
+      radial-gradient(circle at 44% 78%, rgba(90,60,25,0.05), transparent 1.6%),
+      repeating-linear-gradient(90deg, rgba(20,16,10,0.025) 0 1px, transparent 1px 13px);
+    mix-blend-mode: multiply;
+    opacity: 0.75;
+    z-index: 0;
+  }
+
+  html.theme-typewriter .screen {
+    background:
+      radial-gradient(circle at 50% 0%, rgba(255,248,226,0.42), transparent 28%),
+      linear-gradient(180deg, rgba(238,226,199,0.40), rgba(183,166,130,0.24)) !important;
+  }
+
+  html.theme-typewriter .topbar,
+  html.theme-typewriter .pr-btnbar,
+  html.theme-typewriter .pr-btnbar-bottom,
+  html.theme-typewriter .pr-timeline,
+  html.theme-typewriter .chord-pad,
+  html.theme-typewriter .main-progress-wrap,
+  html.theme-typewriter .track-item,
+  html.theme-typewriter .settings-content,
+  html.theme-typewriter .ps-content {
+    background: var(--bg2) !important;
+    border-color: var(--border) !important;
+    box-shadow: var(--glass-shadow) !important;
+    backdrop-filter: none !important;
+  }
+
+  html.theme-typewriter .topbar {
+    background:
+      linear-gradient(180deg, rgba(248,238,216,0.96), rgba(218,200,162,0.92)) !important;
+    border-bottom: 1px solid rgba(85,70,45,0.44) !important;
+  }
+
+  html.theme-typewriter .topbar-btn,
+  html.theme-typewriter .pr-btn,
+  html.theme-typewriter .chord-pad-btn,
+  html.theme-typewriter .wave-type-btn,
+  html.theme-typewriter .wt-preset-btn,
+  html.theme-typewriter .toggle-btn,
+  html.theme-typewriter .ps-touch-btn,
+  html.theme-typewriter .rename-btns button,
+  html.theme-typewriter #wavePreviewBtn,
+  html.theme-typewriter #samplerLoadBtn,
+  html.theme-typewriter #samplerTrimBtn,
+  html.theme-typewriter #samplerPreviewBtn,
+  html.theme-typewriter #creditBtn,
+  html.theme-typewriter #sampleProjectBtn,
+  html.theme-typewriter #autoSaveSetupBtn,
+  html.theme-typewriter .ps-save-btn {
+    border-radius: 7px !important;
+    background: var(--gloss) !important;
+    border: 1px solid rgba(80,62,36,0.46) !important;
+    color: #2c2418 !important;
+    box-shadow: var(--bubble-shadow) !important;
+    text-shadow: 0 1px 0 rgba(255,248,226,0.58) !important;
+    font-weight: 700;
+  }
+
+  html.theme-typewriter .topbar-btn:active,
+  html.theme-typewriter .pr-btn:active,
+  html.theme-typewriter .pr-btn.active,
+  html.theme-typewriter .chord-pad-btn:active,
+  html.theme-typewriter .chord-pad-btn.active,
+  html.theme-typewriter .wave-type-btn.active,
+  html.theme-typewriter .wt-preset-btn.active,
+  html.theme-typewriter .toggle-btn.active,
+  html.theme-typewriter .ps-touch-btn.active {
+    background: linear-gradient(180deg, #f9edcf, #b88b54) !important;
+    color: #21170d !important;
+    border-color: rgba(66,45,22,0.58) !important;
+    transform: translateY(2px) !important;
+    box-shadow: 0 1px 0 rgba(70,52,28,0.42), inset 0 2px 6px rgba(80,52,18,0.20) !important;
+  }
+
+  html.theme-typewriter .pr-btn.play-btn,
+  html.theme-typewriter .chord-pad-play,
+  html.theme-typewriter .transport-btn.playing,
+  html.theme-typewriter .transport-btn.loop-active,
+  html.theme-typewriter .topbar-btn.loop-active,
+  html.theme-typewriter #loopBtn.loop-active,
+  html.theme-typewriter #loopBtnPR.loop-active {
+    background: linear-gradient(180deg, #f8edcf, #8aa36c 48%, #3f7a4a 49%, #9bbd75) !important;
+    border-color: rgba(66,45,22,0.58) !important;
+    color: #1f371c !important;
+    box-shadow: 0 0 0 1px rgba(60,45,26,0.12), 0 3px 0 rgba(70,52,28,0.34) !important;
+  }
+
+  html.theme-typewriter .transport-btn {
+    color: #42331f !important;
+    background: transparent !important;
+    text-shadow: 0 1px 0 rgba(255,248,226,0.70) !important;
+    border-radius: 6px !important;
+  }
+
+  html.theme-typewriter .pr-scroll,
+  html.theme-typewriter .tracklist {
+    background:
+      repeating-linear-gradient(0deg, rgba(53,37,17,0.035) 0 1px, transparent 1px 6px),
+      linear-gradient(180deg, rgba(248,238,216,0.62), rgba(213,195,156,0.48)) !important;
+  }
+
+  html.theme-typewriter .pr-keys,
+  html.theme-typewriter .pr-timeline-keys,
+  html.theme-typewriter .track-left {
+    background: linear-gradient(180deg, rgba(241,226,196,0.92), rgba(198,177,136,0.84)) !important;
+    border-color: rgba(85,70,45,0.44) !important;
+    box-shadow: inset -1px 0 0 rgba(65,45,20,0.20) !important;
+  }
+
+  html.theme-typewriter .pr-key.white {
+    background: linear-gradient(180deg, rgba(244,232,204,0.90), rgba(221,204,168,0.78)) !important;
+    color: #6c5838 !important;
+  }
+
+  html.theme-typewriter .pr-key.black {
+    background: linear-gradient(180deg, rgba(68,53,34,0.92), rgba(35,27,18,0.94)) !important;
+    color: #eadab8 !important;
+  }
+
+  html.theme-typewriter .track-name,
+  html.theme-typewriter #settingsTrackName,
+  html.theme-typewriter #prTrackName {
+    color: #271d11 !important;
+    text-shadow: 0 1px 0 rgba(255,248,226,0.55) !important;
+  }
+
+  html.theme-typewriter .track-meta,
+  html.theme-typewriter .settings-label,
+  html.theme-typewriter .ps-label,
+  html.theme-typewriter .chord-pad-label,
+  html.theme-typewriter .bpm-display,
+  html.theme-typewriter .ex-style-010 {
+    color: #7a6543 !important;
+    text-shadow: 0 1px 0 rgba(255,248,226,0.50) !important;
+  }
+
+  html.theme-typewriter .track-preview-canvas,
+  html.theme-typewriter .wt-draw-canvas,
+  html.theme-typewriter .wt-3d-canvas,
+  html.theme-typewriter #adsrCanvas,
+  html.theme-typewriter #samplerWaveCanvas {
+    border-radius: 6px !important;
+    background:
+      repeating-linear-gradient(0deg, rgba(53,37,17,0.032) 0 1px, transparent 1px 5px),
+      linear-gradient(180deg, rgba(250,239,214,0.96), rgba(207,187,146,0.78)) !important;
+    border: 1px solid rgba(85,70,45,0.44) !important;
+    box-shadow: inset 0 1px 3px rgba(54,37,17,0.16), 0 4px 12px rgba(62,45,20,0.12) !important;
+  }
+
+  html.theme-typewriter .menu-panel,
+  html.theme-typewriter .rename-box,
+  html.theme-typewriter #confirmOverlay > div,
+  html.theme-typewriter #audioExportOverlay > div,
+  html.theme-typewriter #midiExportOverlay > div {
+    background: linear-gradient(180deg, rgba(248,238,216,0.96), rgba(218,200,162,0.94)) !important;
+    border: 1px solid rgba(85,70,45,0.46) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 18px 36px rgba(62,45,20,0.24), inset 0 1px 0 rgba(255,248,226,0.70) !important;
+    backdrop-filter: none !important;
+    color: var(--text) !important;
+  }
+
+  html.theme-typewriter .ps-input,
+  html.theme-typewriter .rename-input,
+  html.theme-typewriter .adsr-input,
+  html.theme-typewriter select.pr-btn,
+  html.theme-typewriter select {
+    background: rgba(250,239,214,0.92) !important;
+    border: 1px solid rgba(85,70,45,0.44) !important;
+    color: #2c2418 !important;
+    border-radius: 7px !important;
+    box-shadow: inset 0 2px 4px rgba(60,40,15,0.12) !important;
+  }
+
+  html.theme-typewriter input[type=range] {
+    height: 7px !important;
+    border-radius: 999px !important;
+    background: linear-gradient(90deg, #7f1d1d, #b0892f, #2f6b3f) !important;
+    box-shadow: inset 0 1px 4px rgba(48,34,18,0.28) !important;
+  }
+
+  html.theme-typewriter input[type=range]::-webkit-slider-thumb {
+    width: 20px !important;
+    height: 20px !important;
+    background: radial-gradient(circle at 35% 25%, #fff4d5 0 22%, #d1b47b 23% 100%) !important;
+    border: 2px solid rgba(74,52,26,0.58) !important;
+    box-shadow: 0 3px 8px rgba(62,45,20,0.28) !important;
+  }
+
+  html.theme-typewriter #prToast,
+  html.theme-typewriter #backToast,
+  html.theme-typewriter #exportDoneToast > div {
+    background: rgba(248,238,216,0.94) !important;
+    color: #2c2418 !important;
+    border: 1px solid rgba(85,70,45,0.44) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 10px 24px rgba(62,45,20,0.22) !important;
+    text-shadow: none !important;
+  }
+
+
+  /* ===== PT PLATINUM THEME ===== */
+  html.theme-pt {
+    --bg: #bdbdbd;
+    --bg2: #d7d7d7;
+    --bg3: #eeeeee;
+    --border: #777777;
+    --accent: #5b58a8;
+    --accent2: #b65a5a;
+    --accent3: #4f8f62;
+    --accent4: #d3a13d;
+    --text: #111111;
+    --text2: #333333;
+    --text3: #666666;
+    --platinum-hi: #ffffff;
+    --platinum-mid: #d7d7d7;
+    --platinum-low: #9a9a9a;
+    --platinum-shadow: #555555;
+    --platinum-stripe: repeating-linear-gradient(180deg, rgba(255,255,255,0.28) 0 1px, rgba(0,0,0,0.045) 1px 2px);
+  }
+
+  html.theme-pt body {
+    background:
+      radial-gradient(circle at 8% 8%, rgba(255,255,255,0.25), transparent 18%),
+      linear-gradient(180deg, #d8d8d8, #b9b9b9) !important;
+    color: #111 !important;
+    letter-spacing: 0;
+  }
+
+  html.theme-pt body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(180deg, rgba(255,255,255,0.12) 0 1px, rgba(0,0,0,0.035) 1px 2px);
+    opacity: 0.42;
+    z-index: 0;
+  }
+
+  html.theme-pt .screen {
+    background: linear-gradient(180deg, #dcdcdc, #bfbfbf) !important;
+  }
+
+  html.theme-pt .topbar,
+  html.theme-pt .pr-btnbar,
+  html.theme-pt .pr-btnbar-bottom,
+  html.theme-pt .pr-timeline,
+  html.theme-pt .chord-pad,
+  html.theme-pt .main-progress-wrap,
+  html.theme-pt .track-item,
+  html.theme-pt .settings-content,
+  html.theme-pt .ps-content {
+    background: var(--platinum-stripe), #d7d7d7 !important;
+    border-color: #7f7f7f !important;
+    box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #8f8f8f;
+    backdrop-filter: none !important;
+  }
+
+  html.theme-pt .topbar {
+    background: linear-gradient(180deg, #f1f1f1, #c7c7c7) !important;
+    border-bottom: 1px solid #555 !important;
+  }
+
+  html.theme-pt .topbar-btn,
+  html.theme-pt .pr-btn,
+  html.theme-pt .chord-pad-btn,
+  html.theme-pt .wave-type-btn,
+  html.theme-pt .wt-preset-btn,
+  html.theme-pt .toggle-btn,
+  html.theme-pt .ps-touch-btn,
+  html.theme-pt .rename-btns button,
+  html.theme-pt #wavePreviewBtn,
+  html.theme-pt #samplerLoadBtn,
+  html.theme-pt #samplerTrimBtn,
+  html.theme-pt #samplerPreviewBtn,
+  html.theme-pt #creditBtn,
+  html.theme-pt #sampleProjectBtn,
+  html.theme-pt #autoSaveSetupBtn,
+  html.theme-pt .ps-save-btn {
+    border-radius: 3px !important;
+    background: linear-gradient(180deg, #f5f5f5, #cfcfcf) !important;
+    border: 1px solid #555 !important;
+    color: #111 !important;
+    box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #8a8a8a, 1px 1px 0 rgba(0,0,0,0.16) !important;
+    text-shadow: none !important;
+    font-weight: 600;
+  }
+
+  html.theme-pt .topbar-btn:active,
+  html.theme-pt .pr-btn:active,
+  html.theme-pt .pr-btn.active,
+  html.theme-pt .chord-pad-btn:active,
+  html.theme-pt .chord-pad-btn.active,
+  html.theme-pt .wave-type-btn.active,
+  html.theme-pt .wt-preset-btn.active,
+  html.theme-pt .toggle-btn.active,
+  html.theme-pt .ps-touch-btn.active {
+    background: linear-gradient(180deg, #9b9b9b, #d8d8d8) !important;
+    color: #000 !important;
+    border-color: #333 !important;
+    transform: translateY(1px);
+    box-shadow: inset 1px 1px 0 #777, inset -1px -1px 0 #fff !important;
+  }
+
+  html.theme-pt .pr-btn.play-btn,
+  html.theme-pt .chord-pad-play,
+  html.theme-pt .transport-btn.playing,
+  html.theme-pt .transport-btn.loop-active,
+  html.theme-pt .topbar-btn.loop-active,
+  html.theme-pt #loopBtn.loop-active,
+  html.theme-pt #loopBtnPR.loop-active {
+    background: linear-gradient(180deg, #e7e5ff, #aaa3de) !important;
+    border-color: #464275 !important;
+    color: #161145 !important;
+    box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #6d67a4 !important;
+  }
+
+  html.theme-pt .transport-btn {
+    color: #111 !important;
+    background: transparent !important;
+    border-radius: 3px !important;
+    text-shadow: none !important;
+  }
+
+  html.theme-pt #pianoroll,
+  html.theme-pt .pr-scroll,
+  html.theme-pt .tracklist {
+    background: #d1d1d1 !important;
+  }
+
+  html.theme-pt .pr-keys,
+  html.theme-pt .pr-timeline-keys,
+  html.theme-pt .track-left {
+    background: var(--platinum-stripe), #cdcdcd !important;
+    border-color: #777 !important;
+    box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #8b8b8b !important;
+  }
+
+  html.theme-pt .pr-key.white {
+    background: linear-gradient(180deg, #eeeeee, #d6d6d6) !important;
+    color: #555 !important;
+  }
+
+  html.theme-pt .pr-key.black {
+    background: linear-gradient(180deg, #737373, #3c3c3c) !important;
+    color: #efefef !important;
+  }
+
+  html.theme-pt .track-name,
+  html.theme-pt #settingsTrackName,
+  html.theme-pt #prTrackName {
+    color: #111 !important;
+    text-shadow: none !important;
+  }
+
+  html.theme-pt .track-meta,
+  html.theme-pt .settings-label,
+  html.theme-pt .ps-label,
+  html.theme-pt .chord-pad-label,
+  html.theme-pt .bpm-display,
+  html.theme-pt .ex-style-010 {
+    color: #555 !important;
+    text-shadow: none !important;
+  }
+
+  html.theme-pt .track-preview-canvas,
+  html.theme-pt .wt-draw-canvas,
+  html.theme-pt .wt-3d-canvas,
+  html.theme-pt #adsrCanvas,
+  html.theme-pt #samplerWaveCanvas {
+    border-radius: 2px !important;
+    background: linear-gradient(180deg, #eeeeee, #cccccc) !important;
+    border: 1px solid #777 !important;
+    box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #999 !important;
+  }
+
+  html.theme-pt .chord-pad-toggle {
+    background: var(--platinum-stripe), #d7d7d7 !important;
+    color: #222 !important;
+    border-bottom: 1px solid #777 !important;
+    text-shadow: none !important;
+    letter-spacing: 0.2px;
+  }
+
+  html.theme-pt .menu-panel,
+  html.theme-pt .rename-box,
+  html.theme-pt #confirmOverlay > div,
+  html.theme-pt #audioExportOverlay > div,
+  html.theme-pt #midiExportOverlay > div {
+    background: #d7d7d7 !important;
+    border: 1px solid #555 !important;
+    border-radius: 3px !important;
+    box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #777, 3px 3px 0 rgba(0,0,0,0.18) !important;
+    backdrop-filter: none !important;
+    color: #111 !important;
+  }
+
+  html.theme-pt .ps-input,
+  html.theme-pt .rename-input,
+  html.theme-pt .adsr-input,
+  html.theme-pt select.pr-btn,
+  html.theme-pt select {
+    background: #f4f4f4 !important;
+    border: 1px solid #555 !important;
+    color: #111 !important;
+    border-radius: 2px !important;
+    box-shadow: inset 1px 1px 0 #aaa, inset -1px -1px 0 #fff !important;
+  }
+
+  html.theme-pt input[type=range] {
+    height: 6px !important;
+    border-radius: 0 !important;
+    background: #c7c7c7 !important;
+    border: 1px solid #777 !important;
+    box-shadow: inset 1px 1px 0 #999, inset -1px -1px 0 #fff !important;
+  }
+
+  html.theme-pt input[type=range]::-webkit-slider-thumb {
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 2px !important;
+    background: linear-gradient(180deg, #f5f5f5, #bdbdbd) !important;
+    border: 1px solid #555 !important;
+    box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #888 !important;
+  }
+
+  html.theme-pt #prToast,
+  html.theme-pt #backToast,
+  html.theme-pt #exportDoneToast > div {
+    background: #e5e5e5 !important;
+    color: #111 !important;
+    border: 1px solid #555 !important;
+    border-radius: 3px !important;
+    box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #888, 2px 2px 0 rgba(0,0,0,0.16) !important;
+    text-shadow: none !important;
+  }
+
+
+  /* ===== CRT GREEN LAB THEME ===== */
+  html.theme-crt-green {
+    --bg: #020705;
+    --bg2: rgba(4, 18, 10, 0.92);
+    --bg3: rgba(8, 35, 18, 0.88);
+    --border: rgba(75, 255, 130, 0.36);
+    --accent: #5cff8d;
+    --accent2: #ff5c7a;
+    --accent3: #7dff6a;
+    --accent4: #ffe66d;
+    --text: #b8ffc7;
+    --text2: #65d982;
+    --text3: #347a48;
+    --crt-glow: 0 0 12px rgba(92,255,141,0.30), 0 0 28px rgba(92,255,141,0.12);
+  }
+
+  html.theme-crt-green body {
+    background:
+      radial-gradient(circle at 50% 45%, rgba(20,120,50,0.26), transparent 62%),
+      radial-gradient(circle at 18% 10%, rgba(92,255,141,0.12), transparent 22%),
+      linear-gradient(180deg, #010403, #06120a 58%, #010403) !important;
+    color: var(--text) !important;
+    text-shadow: 0 0 6px rgba(92,255,141,0.42);
+    letter-spacing: 0.01em;
+  }
+
+  html.theme-crt-green body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(180deg, rgba(190,255,200,0.065) 0 1px, transparent 1px 4px),
+      radial-gradient(circle at 50% 50%, transparent 0 58%, rgba(0,0,0,0.34) 100%);
+    opacity: 0.78;
+    z-index: 0;
+    mix-blend-mode: screen;
+  }
+
+  html.theme-crt-green .screen {
+    background:
+      radial-gradient(circle at 50% 0%, rgba(92,255,141,0.10), transparent 28%),
+      linear-gradient(180deg, rgba(4,20,9,0.92), rgba(1,7,4,0.96)) !important;
+  }
+
+  html.theme-crt-green .topbar,
+  html.theme-crt-green .pr-btnbar,
+  html.theme-crt-green .pr-btnbar-bottom,
+  html.theme-crt-green .pr-timeline,
+  html.theme-crt-green .chord-pad,
+  html.theme-crt-green .main-progress-wrap,
+  html.theme-crt-green .track-item,
+  html.theme-crt-green .settings-content,
+  html.theme-crt-green .ps-content {
+    background: linear-gradient(180deg, rgba(6,28,13,0.96), rgba(2,12,7,0.96)) !important;
+    border-color: rgba(92,255,141,0.30) !important;
+    box-shadow: inset 0 0 0 1px rgba(92,255,141,0.10), 0 0 20px rgba(31,255,97,0.10) !important;
+    backdrop-filter: none !important;
+  }
+
+  html.theme-crt-green .topbar {
+    border-bottom: 1px solid rgba(92,255,141,0.48) !important;
+  }
+
+  html.theme-crt-green .topbar-btn,
+  html.theme-crt-green .pr-btn,
+  html.theme-crt-green .chord-pad-btn,
+  html.theme-crt-green .wave-type-btn,
+  html.theme-crt-green .wt-preset-btn,
+  html.theme-crt-green .toggle-btn,
+  html.theme-crt-green .ps-touch-btn,
+  html.theme-crt-green .rename-btns button,
+  html.theme-crt-green #wavePreviewBtn,
+  html.theme-crt-green #samplerLoadBtn,
+  html.theme-crt-green #samplerTrimBtn,
+  html.theme-crt-green #samplerPreviewBtn,
+  html.theme-crt-green #creditBtn,
+  html.theme-crt-green #sampleProjectBtn,
+  html.theme-crt-green #autoSaveSetupBtn,
+  html.theme-crt-green .ps-save-btn {
+    border-radius: 4px !important;
+    background: linear-gradient(180deg, rgba(15,54,25,0.96), rgba(4,18,10,0.96)) !important;
+    border: 1px solid rgba(92,255,141,0.44) !important;
+    color: #b8ffc7 !important;
+    box-shadow: inset 0 1px 0 rgba(184,255,199,0.18), var(--crt-glow) !important;
+    text-shadow: 0 0 7px rgba(92,255,141,0.70) !important;
+    font-weight: 700;
+  }
+
+  html.theme-crt-green .topbar-btn:active,
+  html.theme-crt-green .pr-btn:active,
+  html.theme-crt-green .pr-btn.active,
+  html.theme-crt-green .chord-pad-btn:active,
+  html.theme-crt-green .chord-pad-btn.active,
+  html.theme-crt-green .wave-type-btn.active,
+  html.theme-crt-green .wt-preset-btn.active,
+  html.theme-crt-green .toggle-btn.active,
+  html.theme-crt-green .ps-touch-btn.active {
+    background: linear-gradient(180deg, rgba(125,255,106,0.36), rgba(16,72,27,0.96)) !important;
+    border-color: rgba(184,255,199,0.82) !important;
+    color: #efffee !important;
+    transform: translateY(1px);
+    box-shadow: 0 0 22px rgba(92,255,141,0.45), inset 0 0 14px rgba(92,255,141,0.18) !important;
+  }
+
+  html.theme-crt-green .pr-btn.play-btn,
+  html.theme-crt-green .chord-pad-play,
+  html.theme-crt-green .transport-btn.playing,
+  html.theme-crt-green .transport-btn.loop-active,
+  html.theme-crt-green .topbar-btn.loop-active,
+  html.theme-crt-green #loopBtn.loop-active,
+  html.theme-crt-green #loopBtnPR.loop-active {
+    background: linear-gradient(180deg, rgba(184,255,199,0.34), rgba(26,112,44,0.96)) !important;
+    border-color: rgba(184,255,199,0.92) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 26px rgba(125,255,106,0.56), inset 0 0 16px rgba(125,255,106,0.22) !important;
+  }
+
+  html.theme-crt-green .transport-btn {
+    color: #7dff6a !important;
+    background: transparent !important;
+    text-shadow: 0 0 8px rgba(125,255,106,0.72) !important;
+  }
+
+  html.theme-crt-green #pianoroll,
+  html.theme-crt-green .pr-scroll,
+  html.theme-crt-green .tracklist {
+    background: #020705 !important;
+  }
+
+  html.theme-crt-green .pr-keys,
+  html.theme-crt-green .pr-timeline-keys,
+  html.theme-crt-green .track-left {
+    background: linear-gradient(180deg, rgba(8,32,15,0.96), rgba(2,12,7,0.96)) !important;
+    border-color: rgba(92,255,141,0.30) !important;
+    box-shadow: inset -1px 0 0 rgba(92,255,141,0.22), 0 0 16px rgba(92,255,141,0.10) !important;
+  }
+
+  html.theme-crt-green .pr-key.white {
+    background: rgba(5,24,11,0.92) !important;
+    color: #347a48 !important;
+  }
+
+  html.theme-crt-green .pr-key.black {
+    background: rgba(1,8,4,0.98) !important;
+    color: #3fa85a !important;
+  }
+
+  html.theme-crt-green .track-name,
+  html.theme-crt-green #settingsTrackName,
+  html.theme-crt-green #prTrackName {
+    color: #d8ffdf !important;
+    text-shadow: 0 0 8px rgba(92,255,141,0.52) !important;
+  }
+
+  html.theme-crt-green .track-meta,
+  html.theme-crt-green .settings-label,
+  html.theme-crt-green .ps-label,
+  html.theme-crt-green .chord-pad-label,
+  html.theme-crt-green .bpm-display,
+  html.theme-crt-green .ex-style-010,
+  html.theme-crt-green .ex-style-051 {
+    color: #65d982 !important;
+    text-shadow: 0 0 6px rgba(92,255,141,0.36) !important;
+  }
+
+  html.theme-crt-green .track-preview-canvas,
+  html.theme-crt-green .wt-draw-canvas,
+  html.theme-crt-green .wt-3d-canvas,
+  html.theme-crt-green #adsrCanvas,
+  html.theme-crt-green #samplerWaveCanvas {
+    border-radius: 4px !important;
+    background: radial-gradient(circle at 50% 45%, rgba(31,255,97,0.13), transparent 56%), #020705 !important;
+    border: 1px solid rgba(92,255,141,0.38) !important;
+    box-shadow: inset 0 0 18px rgba(92,255,141,0.12), 0 0 18px rgba(92,255,141,0.12) !important;
+    filter: contrast(1.06) saturate(1.18);
+  }
+
+  html.theme-crt-green .menu-panel,
+  html.theme-crt-green .rename-box,
+  html.theme-crt-green #confirmOverlay > div,
+  html.theme-crt-green #audioExportOverlay > div,
+  html.theme-crt-green #midiExportOverlay > div {
+    background: linear-gradient(180deg, rgba(6,28,13,0.98), rgba(1,8,4,0.98)) !important;
+    border: 1px solid rgba(92,255,141,0.44) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 0 30px rgba(92,255,141,0.20), inset 0 0 18px rgba(92,255,141,0.08) !important;
+    color: var(--text) !important;
+    backdrop-filter: none !important;
+  }
+
+  html.theme-crt-green .menu-item {
+    border-bottom-color: rgba(92,255,141,0.22) !important;
+  }
+
+  html.theme-crt-green .menu-item:active {
+    background: rgba(92,255,141,0.18) !important;
+  }
+
+  html.theme-crt-green .ps-input,
+  html.theme-crt-green .rename-input,
+  html.theme-crt-green .adsr-input,
+  html.theme-crt-green select.pr-btn,
+  html.theme-crt-green select {
+    background: rgba(1,8,4,0.92) !important;
+    border: 1px solid rgba(92,255,141,0.42) !important;
+    color: #d8ffdf !important;
+    border-radius: 4px !important;
+    box-shadow: inset 0 0 10px rgba(92,255,141,0.10) !important;
+    text-shadow: 0 0 7px rgba(92,255,141,0.48) !important;
+  }
+
+  html.theme-crt-green input[type=range] {
+    height: 7px !important;
+    border-radius: 999px !important;
+    background: linear-gradient(90deg, #124d21, #5cff8d, #d8ffdf) !important;
+    box-shadow: 0 0 12px rgba(92,255,141,0.30), inset 0 1px 3px rgba(0,0,0,0.8) !important;
+  }
+
+  html.theme-crt-green input[type=range]::-webkit-slider-thumb {
+    width: 20px !important;
+    height: 20px !important;
+    background: radial-gradient(circle at 35% 25%, #ffffff 0 18%, #b8ffc7 19% 42%, #48e872 43% 100%) !important;
+    border: 1px solid rgba(216,255,223,0.92) !important;
+    box-shadow: 0 0 18px rgba(92,255,141,0.62) !important;
+  }
+
+  html.theme-crt-green .danger-btn {
+    color: #ff8fa2 !important;
+    background: linear-gradient(180deg, rgba(54,15,23,0.96), rgba(18,4,8,0.96)) !important;
+    border-color: rgba(255,92,122,0.52) !important;
+  }
+
+  html.theme-crt-green #prToast,
+  html.theme-crt-green #backToast,
+  html.theme-crt-green #exportDoneToast > div {
+    background: rgba(4,18,10,0.96) !important;
+    color: #d8ffdf !important;
+    border: 1px solid rgba(92,255,141,0.52) !important;
+    border-radius: 999px !important;
+    box-shadow: 0 0 24px rgba(92,255,141,0.28), inset 0 0 14px rgba(92,255,141,0.10) !important;
+    text-shadow: 0 0 8px rgba(92,255,141,0.58) !important;
+  }
+
 </style>
 </head>
 <body>
@@ -1529,6 +2272,17 @@
 <div class="ps-row">
 <div class="ps-label">총 마디 수</div>
 <input class="ps-input" id="barsInput" max="999" min="1" type="number" value="4"/>
+</div>
+<div class="ps-row ex-style-056">
+<div class="ps-label">테마</div>
+<div class="theme-row">
+<button class="ps-touch-btn theme-btn" data-theme="theme-aero" id="themeAeroBtn">AERO</button>
+<button class="ps-touch-btn theme-btn" data-theme="theme-dark" id="themeDarkBtn">DARK</button>
+<button class="ps-touch-btn theme-btn" data-theme="theme-typewriter" id="themeTypewriterBtn">TYPE</button>
+<button class="ps-touch-btn theme-btn" data-theme="theme-pt" id="themePtBtn">PT</button>
+<button class="ps-touch-btn theme-btn" data-theme="theme-crt-green" id="themeCrtGreenBtn">CRT</button>
+</div>
+<div class="ex-style-010" id="themeStatusLabel">현재 테마: AERO</div>
 </div>
 <div class="ps-row ex-style-054">
 <div class="ps-label">터치 위치 보정</div>
@@ -2832,10 +3586,208 @@ let project = {
   timeNum: 4,
   timeDen: 4,
   bars: 16,
+  theme: 'theme-aero',
   tracks: []
 };
 
 let currentTrackIdx = -1;
+
+const THEME_CLASSES = ['theme-aero', 'theme-dark', 'theme-typewriter', 'theme-pt', 'theme-crt-green'];
+const THEME_STORAGE_KEY = 'composerTheme';
+const THEME_LABELS = {
+  'theme-aero': 'AERO',
+  'theme-dark': 'DARK',
+  'theme-typewriter': 'TYPEWRITER',
+  'theme-pt': 'PT',
+  'theme-crt-green': 'CRT GREEN LAB'
+};
+
+const CANVAS_THEMES = {
+  'theme-aero': {
+    previewTop: 'rgba(245, 254, 255, 0.92)',
+    previewBottom: 'rgba(171, 232, 255, 0.70)',
+    previewStroke: 'rgba(255,255,255,0.70)',
+    mainTop: 'rgba(245, 254, 255, 0.92)',
+    mainBottom: 'rgba(173, 232, 255, 0.72)',
+    leftTop: 'rgba(255, 255, 255, 0.78)',
+    leftBottom: 'rgba(187, 239, 255, 0.62)',
+    rowWhite: 'rgba(239, 253, 255, 0.82)',
+    rowBlack: 'rgba(164, 219, 244, 0.72)',
+    rowLine: 'rgba(82, 166, 210, 0.22)',
+    cLine: 'rgba(0, 132, 210, 0.34)',
+    measureLine: 'rgba(0, 118, 200, 0.42)',
+    beatLine: 'rgba(0, 118, 200, 0.24)',
+    halfLine: 'rgba(0, 118, 200, 0.16)',
+    subLine: 'rgba(0, 118, 200, 0.13)',
+    timelineBg: 'rgba(226, 250, 255, 0.88)',
+    timelineMeasure: 'rgba(0, 128, 210, 0.62)',
+    timelineBeat: 'rgba(0, 128, 210, 0.20)',
+    label: '#5b86a3',
+    note: '#129df5',
+    noteStroke: '#dff8ff',
+    selectedNote: '#ff5ca8',
+    selectedStroke: '#ffffff',
+    playhead: '#20c56d',
+    playheadSoft: 'rgba(32, 197, 109, 0.55)',
+    divider: 'rgba(0, 118, 200, 0.18)'
+  },
+  'theme-dark': {
+    previewTop: '#101018',
+    previewBottom: '#171725',
+    previewStroke: '#2a2a3e',
+    mainTop: '#12121c',
+    mainBottom: '#171725',
+    leftTop: '#181826',
+    leftBottom: '#12121c',
+    rowWhite: '#171725',
+    rowBlack: '#101018',
+    rowLine: 'rgba(42,42,62,0.95)',
+    cLine: 'rgba(108,99,255,0.34)',
+    measureLine: 'rgba(108,99,255,0.42)',
+    beatLine: 'rgba(108,99,255,0.24)',
+    halfLine: 'rgba(108,99,255,0.16)',
+    subLine: 'rgba(108,99,255,0.12)',
+    timelineBg: '#161620',
+    timelineMeasure: 'rgba(108,99,255,0.62)',
+    timelineBeat: 'rgba(108,99,255,0.20)',
+    label: '#8888aa',
+    note: '#6c63ff',
+    noteStroke: '#b8b5ff',
+    selectedNote: '#ff6584',
+    selectedStroke: '#ffd6df',
+    playhead: '#43d08a',
+    playheadSoft: 'rgba(67, 208, 138, 0.55)',
+    divider: 'rgba(108,99,255,0.22)'
+  },
+  'theme-typewriter': {
+    previewTop: '#f3e6c7',
+    previewBottom: '#cdb98a',
+    previewStroke: 'rgba(82, 62, 34, 0.42)',
+    mainTop: '#efe2c4',
+    mainBottom: '#c7b184',
+    leftTop: '#ead9b6',
+    leftBottom: '#bda77a',
+    rowWhite: '#eadabc',
+    rowBlack: '#d6c198',
+    rowLine: 'rgba(83, 62, 33, 0.30)',
+    cLine: 'rgba(127, 29, 29, 0.38)',
+    measureLine: 'rgba(83, 62, 33, 0.58)',
+    beatLine: 'rgba(83, 62, 33, 0.30)',
+    halfLine: 'rgba(83, 62, 33, 0.20)',
+    subLine: 'rgba(83, 62, 33, 0.16)',
+    timelineBg: '#ead9b6',
+    timelineMeasure: 'rgba(83, 62, 33, 0.64)',
+    timelineBeat: 'rgba(83, 62, 33, 0.24)',
+    label: '#7a6543',
+    note: '#2d2114',
+    noteStroke: '#f7ead0',
+    selectedNote: '#7f1d1d',
+    selectedStroke: '#f8edcf',
+    playhead: '#9b1c1c',
+    playheadSoft: 'rgba(155, 28, 28, 0.45)',
+    divider: 'rgba(83, 62, 33, 0.26)'
+  },
+  'theme-pt': {
+    previewTop: '#eeeeee',
+    previewBottom: '#cfcfcf',
+    previewStroke: 'rgba(54,54,54,0.38)',
+    mainTop: '#ededed',
+    mainBottom: '#c9c9c9',
+    leftTop: '#e8e8e8',
+    leftBottom: '#bdbdbd',
+    rowWhite: '#e5e5e5',
+    rowBlack: '#d2d2d2',
+    rowLine: 'rgba(72,72,72,0.26)',
+    cLine: 'rgba(72, 88, 166, 0.38)',
+    measureLine: 'rgba(52,52,52,0.56)',
+    beatLine: 'rgba(52,52,52,0.28)',
+    halfLine: 'rgba(52,52,52,0.18)',
+    subLine: 'rgba(52,52,52,0.13)',
+    timelineBg: '#dddddd',
+    timelineMeasure: 'rgba(45,45,45,0.62)',
+    timelineBeat: 'rgba(45,45,45,0.22)',
+    label: '#555555',
+    note: '#7b62c7',
+    noteStroke: '#eeeaf9',
+    selectedNote: '#3b66c4',
+    selectedStroke: '#edf3ff',
+    playhead: '#2f66c5',
+    playheadSoft: 'rgba(47, 102, 197, 0.45)',
+    divider: 'rgba(60,60,60,0.24)'
+  },
+  'theme-crt-green': {
+    previewTop: '#03110a',
+    previewBottom: '#010604',
+    previewStroke: 'rgba(92,255,141,0.34)',
+    mainTop: '#04170c',
+    mainBottom: '#010604',
+    leftTop: '#082010',
+    leftBottom: '#020b06',
+    rowWhite: '#04160b',
+    rowBlack: '#010604',
+    rowLine: 'rgba(92,255,141,0.18)',
+    cLine: 'rgba(184,255,199,0.34)',
+    measureLine: 'rgba(92,255,141,0.48)',
+    beatLine: 'rgba(92,255,141,0.24)',
+    halfLine: 'rgba(92,255,141,0.16)',
+    subLine: 'rgba(92,255,141,0.11)',
+    timelineBg: '#020b06',
+    timelineMeasure: 'rgba(92,255,141,0.58)',
+    timelineBeat: 'rgba(92,255,141,0.22)',
+    label: '#65d982',
+    note: '#5cff8d',
+    noteStroke: '#d8ffdf',
+    noteText: '#001a0a',
+    selectedNote: '#ffe66d',
+    selectedStroke: '#ffffff',
+    selectedNoteText: '#1b1300',
+    playhead: '#ffffff',
+    playheadSoft: 'rgba(125,255,106,0.68)',
+    divider: 'rgba(92,255,141,0.22)'
+  }
+};
+
+function normalizeThemeName(theme) {
+  // 이전 버전 호환: 예전 저장값/프로젝트 파일에 남은 이름을 새 이름으로 변환
+  if (theme === 'theme-mac-platinum') return 'theme-pt';
+  return theme;
+}
+
+function getCanvasTheme() {
+  return CANVAS_THEMES[getCurrentTheme()] || CANVAS_THEMES['theme-aero'];
+}
+
+function getCurrentTheme() {
+  return THEME_CLASSES.find(cls => document.documentElement.classList.contains(cls)) || 'theme-aero';
+}
+
+function syncThemeButtons(theme) {
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === theme);
+  });
+  const label = document.getElementById('themeStatusLabel');
+  if (label) label.textContent = '현재 테마: ' + (THEME_LABELS[theme] || theme);
+}
+
+function applyTheme(theme, { persist = true } = {}) {
+  theme = normalizeThemeName(theme);
+  if (!THEME_CLASSES.includes(theme)) theme = 'theme-aero';
+  document.documentElement.classList.remove(...THEME_CLASSES);
+  document.documentElement.classList.add(theme);
+  if (project) project.theme = theme;
+  if (persist) localStorage.setItem(THEME_STORAGE_KEY, theme);
+  syncThemeButtons(theme);
+  requestAnimationFrame(() => {
+    if (typeof renderTrackList === 'function') renderTrackList();
+    if (typeof drawMainProgress === 'function') drawMainProgress();
+    if (typeof drawPR === 'function') drawPR();
+    if (typeof drawTimeline === 'function') drawTimeline();
+    if (typeof renderPianoRoll === 'function' && document.getElementById('pianoroll')?.classList.contains('active')) renderPianoRoll();
+  });
+}
+
+applyTheme(localStorage.getItem(THEME_STORAGE_KEY) || project.theme || 'theme-aero', { persist: false });
+
 let isPlaying = false;
 let loopEnabled = false;
 let playPos = 0; // in beats
@@ -2924,6 +3876,7 @@ function savePRViewState() {
 
 function normalizeProjectAfterLoad() {
   if (!project || !Array.isArray(project.tracks)) return;
+  if (!THEME_CLASSES.includes(project.theme)) project.theme = localStorage.getItem(THEME_STORAGE_KEY) || 'theme-aero';
   project.tracks.forEach(track => {
     if (!track) return;
     if (track.prView) {
@@ -3239,12 +4192,13 @@ function drawTrackPreview(canvas, track) {
     canvas.height = H;
   }
   const ctx = canvas.getContext('2d');
+  const theme = getCanvasTheme();
   const grad = ctx.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, 'rgba(245, 254, 255, 0.92)');
-  grad.addColorStop(1, 'rgba(171, 232, 255, 0.70)');
+  grad.addColorStop(0, theme.previewTop);
+  grad.addColorStop(1, theme.previewBottom);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
-  ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+  ctx.strokeStyle = theme.previewStroke;
   ctx.strokeRect(0.5, 0.5, W-1, H-1);
 
   const tb = project.bars * project.timeNum;
@@ -3266,7 +4220,7 @@ function drawTrackPreview(canvas, track) {
     const maxP = Math.max(...pitches) + 1;
     const range = Math.max(maxP - minP, 8);
 
-    ctx.fillStyle = '#129df5';
+    ctx.fillStyle = theme.note;
     track.notes.forEach(n => {
       // 진행바 롤 영역 기준 x (scrollX 반영)
       const rx = n.startBeat * beatW - mainProgressScrollX;
@@ -3478,9 +4432,9 @@ function drawSamplerWave() {
   ctx.fillRect(sx, 0, ex - sx, H);
 
   // 시작 핸들
-  ctx.fillStyle = '#43d08a';
+  ctx.fillStyle = theme.playhead;
   ctx.fillRect(sx - 1, 0, 2, H);
-  ctx.fillStyle = '#43d08a';
+  ctx.fillStyle = theme.playhead;
   ctx.beginPath();
   ctx.moveTo(sx, 0); ctx.lineTo(sx + 10, 0); ctx.lineTo(sx, 12);
   ctx.fill();
@@ -3962,6 +4916,7 @@ function drawPRAndTimeline() {
 function drawPR() {
   if (!prCtx) return;
   const W = prCanvas.width, H = prCanvas.height;
+  const theme = getCanvasTheme();
   prCtx.clearRect(0, 0, W, H);
 
   const totalP = 87; // 107 - 21 + 1
@@ -3971,14 +4926,14 @@ function drawPR() {
   for (let p = 107; p >= 21; p--) {
     const y = pitchToY(p);
     if (y > H || y + PR.cellH < 0) continue;
-    prCtx.fillStyle = isBlack(p) ? 'rgba(164, 219, 244, 0.72)' : 'rgba(239, 253, 255, 0.82)';
+    prCtx.fillStyle = isBlack(p) ? theme.rowBlack : theme.rowWhite;
     prCtx.fillRect(0, y, W, PR.cellH);
     // row line
-    prCtx.fillStyle = 'rgba(82, 166, 210, 0.22)';
+    prCtx.fillStyle = theme.rowLine;
     prCtx.fillRect(0, y + PR.cellH - 1, W, 1);
     // C mark (B와 C 사이 = C 셀의 아래쪽)
     if (p % 12 === 0) {
-      prCtx.fillStyle = 'rgba(0, 132, 210, 0.34)';
+      prCtx.fillStyle = theme.cLine;
       prCtx.fillRect(0, y + PR.cellH - 1, W, 2);
     }
   }
@@ -4001,17 +4956,17 @@ function drawPR() {
     if (x < -2 || x > W + 2) return;
 
     if (strength === 'measure') {
-      prCtx.fillStyle = 'rgba(0, 118, 200, 0.42)';
+      prCtx.fillStyle = theme.measureLine;
       prCtx.fillRect(x, 0, 2, H);
     } else if (strength === 'beat') {
-      prCtx.fillStyle = 'rgba(0, 118, 200, 0.24)';
+      prCtx.fillStyle = theme.beatLine;
       prCtx.fillRect(x, 0, 1, H);
     } else if (strength === 'half') {
-      prCtx.fillStyle = 'rgba(0, 118, 200, 0.16)';
+      prCtx.fillStyle = theme.halfLine;
       prCtx.fillRect(x, 0, 1, H);
     } else {
       // 셋잇단/특수 스냅선
-      prCtx.fillStyle = 'rgba(0, 118, 200, 0.13)';
+      prCtx.fillStyle = theme.subLine;
       prCtx.fillRect(x, 0, 1, H);
     }
   }
@@ -4088,32 +5043,34 @@ function drawPR() {
     const w = Math.max(4, n.lenBeats * PR.beatW - 2);
     if (x + w < 0 || x > W || y + PR.cellH < 0 || y > H) return;
 
-    prCtx.fillStyle = n.selected ? '#ff5ca8' : '#129df5';
+    prCtx.fillStyle = n.selected ? theme.selectedNote : theme.note;
     prCtx.beginPath();
     prCtx.roundRect(x+1, y+2, w, PR.cellH-4, 3);
     prCtx.fill();
     // 테두리
-    prCtx.strokeStyle = n.selected ? '#ffffff' : '#dff8ff';
+    prCtx.strokeStyle = n.selected ? theme.selectedStroke : theme.noteStroke;
     prCtx.lineWidth = 1;
     prCtx.beginPath();
     prCtx.roundRect(x+1, y+2, w, PR.cellH-4, 3);
     prCtx.stroke();
 
     if (PR.cellH > 10) {
-      prCtx.fillStyle = 'rgba(255,255,255,0.92)';
+      prCtx.fillStyle = n.selected
+        ? (theme.selectedNoteText || theme.noteText || 'rgba(255,255,255,0.92)')
+        : (theme.noteText || 'rgba(255,255,255,0.92)');
       prCtx.font = `bold ${Math.min(10, PR.cellH-4)}px Consolas, D2Coding, monospace`;
       prCtx.fillText(pitchName(n.pitch), x+4, y + PR.cellH - 4);
     }
     // 리사이즈 핸들 (오른쪽 끝 작은 줄)
     if (w > 12) {
-      prCtx.fillStyle = 'rgba(255,255,255,0.55)';
+      prCtx.fillStyle = theme.noteHandle || (theme.noteText ? 'rgba(0,0,0,0.36)' : 'rgba(255,255,255,0.55)');
       prCtx.fillRect(x + w - 3, y + 4, 2, PR.cellH - 8);
     }
   });
 
   // Selection rect
   if (PR.selRect) {
-    prCtx.strokeStyle = '#ff5ca8';
+    prCtx.strokeStyle = theme.selectedNote;
     prCtx.lineWidth = 1;
     prCtx.setLineDash([4, 2]);
     prCtx.strokeRect(PR.selRect.x, PR.selRect.y, PR.selRect.w, PR.selRect.h);
@@ -4133,8 +5090,9 @@ function drawTimeline() {
   }
   const W = tlCanvas.width, H = tlCanvas.height;
   if (!W || !H) return;
+  const theme = getCanvasTheme();
   tlCtx.clearRect(0, 0, W, H);
-  tlCtx.fillStyle = 'rgba(226, 250, 255, 0.88)';
+  tlCtx.fillStyle = theme.timelineBg;
   tlCtx.fillRect(0, 0, W, H);
 
   const tb = totalBeats();
@@ -4143,13 +5101,13 @@ function drawTimeline() {
     if (x < 0 || x > W) continue;
     const isMeasure = b % project.timeNum === 0;
     if (isMeasure) {
-      tlCtx.fillStyle = 'rgba(0, 128, 210, 0.62)';
+      tlCtx.fillStyle = theme.timelineMeasure;
       tlCtx.fillRect(x, 0, 1, H);
-      tlCtx.fillStyle = '#2f6f98';
+      tlCtx.fillStyle = theme.label;
       tlCtx.font = '9px Consolas, D2Coding, monospace';
       tlCtx.fillText(String(Math.floor(b/project.timeNum)+1), x+3, H-4);
     } else {
-      tlCtx.fillStyle = 'rgba(0, 128, 210, 0.20)';
+      tlCtx.fillStyle = theme.timelineBeat;
       tlCtx.fillRect(x, H/2, 1, H/2);
     }
   }
@@ -4158,20 +5116,20 @@ function drawTimeline() {
   const px = beatToX(PR.playPos);
   if (px >= 0 && px <= W) {
     // 타임라인 플레이헤드
-    tlCtx.fillStyle = '#20c56d';
+    tlCtx.fillStyle = theme.playhead;
     tlCtx.fillRect(px, 0, 2, H);
     // 삼각형 마커
     tlCtx.beginPath();
     tlCtx.moveTo(px-4, 0);
     tlCtx.lineTo(px+4, 0);
     tlCtx.lineTo(px, 8);
-    tlCtx.fillStyle = '#20c56d';
+    tlCtx.fillStyle = theme.playhead;
     tlCtx.fill();
 
     // 피아노롤 영역까지 연장선
     if (prCtx && prCanvas) {
       prCtx.save();
-      prCtx.fillStyle = 'rgba(32, 197, 109, 0.55)';
+      prCtx.fillStyle = theme.playheadSoft;
       prCtx.fillRect(Math.max(0, px), 0, 2, prCanvas.height);
       prCtx.restore();
     }
@@ -5370,7 +6328,7 @@ function closeMenu() { document.getElementById('menuOverlay').classList.remove('
 
 document.getElementById('menuNew').addEventListener('click', () => {
   showConfirm('새 프로젝트를 만들까요?\n저장되지 않은 내용은 사라집니다.', () => {
-    project = { name:randomHamsterName(), bpm:120, timeNum:4, timeDen:4, bars:16, tracks:[] };
+    project = { name:randomHamsterName(), bpm:120, timeNum:4, timeDen:4, bars:16, theme:getCurrentTheme(), tracks:[] };
     PR.playPos = 0;
     mainProgressScrollX = 0;
     renderTrackList();
@@ -5411,6 +6369,7 @@ document.getElementById('fileInput').addEventListener('change', e => {
     try {
       project = JSON.parse(ev.target.result);
       normalizeProjectAfterLoad();
+      applyTheme(project.theme, { persist: true });
       autoSaveEnabled = false;
       autoSaveFileHandle = null;
       PR.playPos = 0;
@@ -5739,6 +6698,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
   denSel.value = project.timeDen;
   if (!denSel.value) denSel.value = '4';
   document.getElementById('barsInput').value = project.bars;
+  syncThemeButtons(project.theme || getCurrentTheme());
   const ps = document.getElementById('projSettings');
   ps.classList.add('open');
   applyOverlayScale(ps);
@@ -5746,7 +6706,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 0.98',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 0.99',
     () => {}, '확인', ''
   );
 });
@@ -5754,6 +6714,7 @@ document.getElementById('creditBtn').addEventListener('click', () => {
 async function loadProjectFromObject(nextProject, { resetAutoSave = true } = {}) {
   project = nextProject;
   normalizeProjectAfterLoad();
+  applyTheme(project.theme, { persist: true });
   if (resetAutoSave) {
     autoSaveEnabled = false;
     autoSaveFileHandle = null;
@@ -5806,10 +6767,16 @@ document.getElementById('sampleProjectBtn').addEventListener('click', () => {
 document.getElementById('psBack').addEventListener('click', () => {
   document.getElementById('projSettings').classList.remove('open');
 });
-document.querySelectorAll('.ps-touch-btn').forEach(btn => {
+document.querySelectorAll('.ps-touch-btn:not(.theme-btn)').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.ps-touch-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.ps-touch-btn:not(.theme-btn)').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+  });
+});
+
+document.querySelectorAll('.theme-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    applyTheme(btn.dataset.theme, { persist: true });
   });
 });
 
@@ -5828,6 +6795,7 @@ document.getElementById('psSave').addEventListener('click', () => {
   project.timeNum = num;
   project.timeDen = den;
   project.bars = bars;
+  project.theme = getCurrentTheme();
   // 박자 변경 시 스냅을 1/4로 리셋
   PR.snapIdx = 2;
   const snapBtn = document.getElementById('snapBtn');
@@ -6556,23 +7524,24 @@ function drawMainProgress() {
   canvas.height = wrap.offsetHeight;
   const W = canvas.width, H = canvas.height;
   const ctx = canvas.getContext('2d');
+  const theme = getCanvasTheme();
 
   const mainBg = ctx.createLinearGradient(0, 0, 0, H);
-  mainBg.addColorStop(0, 'rgba(245, 254, 255, 0.92)');
-  mainBg.addColorStop(1, 'rgba(173, 232, 255, 0.72)');
+  mainBg.addColorStop(0, theme.mainTop);
+  mainBg.addColorStop(1, theme.mainBottom);
   ctx.fillStyle = mainBg;
   ctx.fillRect(0, 0, W, H);
 
   // 왼쪽 고정 영역 (트랙 정보와 정렬)
   const leftBg = ctx.createLinearGradient(0, 0, 0, H);
-  leftBg.addColorStop(0, 'rgba(255, 255, 255, 0.78)');
-  leftBg.addColorStop(1, 'rgba(187, 239, 255, 0.62)');
+  leftBg.addColorStop(0, theme.leftTop);
+  leftBg.addColorStop(1, theme.leftBottom);
   ctx.fillStyle = leftBg;
   ctx.fillRect(0, 0, TRACK_LEFT_W, H);
-  ctx.fillStyle = 'rgba(0, 118, 200, 0.18)';
+  ctx.fillStyle = theme.divider;
   ctx.fillRect(TRACK_LEFT_W - 1, 0, 1, H);
   // 왼쪽 영역에 마디 이동 힌트
-  ctx.fillStyle = '#5b86a3';
+  ctx.fillStyle = theme.label;
   ctx.font = '11px Consolas, monospace';
   ctx.textAlign = 'center';
   ctx.fillText('↵', TRACK_LEFT_W / 2, H / 2 + 4);
@@ -6589,13 +7558,13 @@ function drawMainProgress() {
     if (x < TRACK_LEFT_W - beatW || x > W) continue;
     const isMeasure = b % project.timeNum === 0;
     if (isMeasure) {
-      ctx.fillStyle = 'rgba(0, 118, 200, 0.30)';
+      ctx.fillStyle = theme.measureLine;
       ctx.fillRect(x, 0, 1, H);
-      ctx.fillStyle = '#5b86a3';
+      ctx.fillStyle = theme.label;
       ctx.font = '8px Consolas, D2Coding, monospace';
       ctx.fillText(String(Math.floor(b / project.timeNum) + 1), x + 3, H - 3);
     } else {
-      ctx.fillStyle = 'rgba(0, 118, 200, 0.13)';
+      ctx.fillStyle = theme.subLine;
       ctx.fillRect(x, H / 2, 1, H / 2);
     }
   }
@@ -6603,13 +7572,13 @@ function drawMainProgress() {
   // 재생 위치
   const px = TRACK_LEFT_W + PR.playPos * beatW - mainProgressScrollX;
   if (px >= TRACK_LEFT_W && px <= W) {
-    ctx.fillStyle = '#43d08a';
+    ctx.fillStyle = theme.playhead;
     ctx.fillRect(px, 0, 2, H);
     ctx.beginPath();
     ctx.moveTo(px - 4, 0);
     ctx.lineTo(px + 4, 0);
     ctx.lineTo(px, 6);
-    ctx.fillStyle = '#43d08a';
+    ctx.fillStyle = theme.playhead;
     ctx.fill();
   }
 
@@ -6627,11 +7596,11 @@ function drawMainProgress() {
     const pScale = pW / rollW; // 진행바 롤 영역 → 미리보기 스케일
 
     const pGrad = pCtx.createLinearGradient(0, 0, 0, pH);
-    pGrad.addColorStop(0, 'rgba(245, 254, 255, 0.92)');
-    pGrad.addColorStop(1, 'rgba(171, 232, 255, 0.70)');
+    pGrad.addColorStop(0, theme.previewTop);
+    pGrad.addColorStop(1, theme.previewBottom);
     pCtx.fillStyle = pGrad;
     pCtx.fillRect(0, 0, pW, pH);
-    pCtx.strokeStyle = 'rgba(255,255,255,0.70)';
+    pCtx.strokeStyle = theme.previewStroke;
     pCtx.strokeRect(0.5, 0.5, pW-1, pH-1);
 
     // 노트 그리기
@@ -6640,7 +7609,7 @@ function drawMainProgress() {
       const minP = Math.min(...pitches);
       const maxP = Math.max(...pitches) + 1;
       const range = Math.max(maxP - minP, 8);
-      pCtx.fillStyle = '#129df5';
+      pCtx.fillStyle = theme.note;
       track.notes.forEach(n => {
         const nx = (n.startBeat * beatW - mainProgressScrollX) * pScale;
         const nw = Math.max(2, n.lenBeats * beatW * pScale - 1);
@@ -6654,7 +7623,7 @@ function drawMainProgress() {
     // 플레이헤드
     const headX = (PR.playPos * beatW - mainProgressScrollX) * pScale;
     if (headX >= 0 && headX <= pW) {
-      pCtx.fillStyle = '#20c56d';
+      pCtx.fillStyle = theme.playhead;
       pCtx.fillRect(headX, 0, 2, pH);
     }
   });
