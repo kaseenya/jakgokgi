@@ -168,6 +168,36 @@
     margin-top: 3px;
     letter-spacing: 0.3px;
   }
+  .track-quick-buttons {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .track-ms-btn {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text2);
+    font-family: 'Consolas','D2Coding','Menlo','Monaco','Courier New',monospace;
+    font-size: 10px;
+    line-height: 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .track-ms-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .track-ms-btn.solo-active {
+    background: var(--accent2);
+    border-color: var(--accent2);
+    color: #fff;
+  }
   .track-muted { opacity: 0.4; }
   .track-muted .track-name { color: var(--text3); }
 
@@ -2168,6 +2198,242 @@
     box-shadow: 4px 4px 0 #080c18 !important;
   }
 
+
+
+  /* ===== MOBILE PROJECT SETTINGS SAFE-BOTTOM PATCH =====
+     일부 모바일 브라우저에서 하단 내비게이션 바가 프로젝트 설정의 저장/확인 버튼을
+     가리는 문제를 막기 위해 동적 뷰포트와 여분의 스크롤 공간을 사용한다. */
+  #projSettings {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    bottom: auto !important;
+  }
+
+  #projSettings .ps-content {
+    padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px)) !important;
+    scroll-padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px)) !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 저장 버튼은 문서 흐름 안에 그대로 둔다.
+     sticky/fixed를 쓰면 일부 모바일 브라우저에서 중간에 떠다니는 문제가 생긴다. */
+  #projSettings .ps-save-btn {
+    position: static !important;
+    bottom: auto !important;
+    z-index: auto !important;
+    margin-bottom: 0 !important;
+  }
+
+  @supports not (height: 100dvh) {
+    #projSettings {
+      height: 100vh !important;
+      max-height: 100vh !important;
+    }
+  }
+
+
+  /* ===== COMPACT PROJECT SETTINGS PATCH =====
+     BPM / 박자 / 마디 수를 한 줄 구성으로 압축한다. */
+  #projSettings .ps-content {
+    padding-top: 14px !important;
+  }
+
+  #projSettings .ps-row {
+    margin-bottom: 14px !important;
+  }
+
+  #projSettings .ps-compact-project-row {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 15px !important;
+  }
+
+  #projSettings .ps-compact-label-row,
+  #projSettings .ps-compact-input-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.18fr) minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+  }
+
+  #projSettings .ps-compact-label-row .ps-label {
+    margin-bottom: 0 !important;
+    white-space: nowrap;
+  }
+
+  #projSettings .ps-compact-input-row .ps-input {
+    min-width: 0;
+    width: 100%;
+    font-size: 15px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  #projSettings .ps-timesig-compact {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 5px;
+    align-items: center;
+    min-width: 0;
+  }
+
+  #projSettings .ps-timesig-compact span {
+    color: var(--text2);
+    text-align: center;
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  #projSettings .theme-row {
+    gap: 6px !important;
+  }
+
+  #projSettings .ps-save-btn,
+  #projSettings #creditBtn,
+  #projSettings #sampleProjectBtn,
+  #projSettings #autoSaveSetupBtn {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+  }
+
+  #projSettings .ps-content {
+    padding-bottom: calc(42px + env(safe-area-inset-bottom, 0px)) !important;
+    scroll-padding-bottom: calc(42px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  @media (max-width: 380px) {
+    #projSettings .ps-compact-label-row,
+    #projSettings .ps-compact-input-row {
+      gap: 5px;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.25fr) minmax(0, 0.9fr);
+    }
+    #projSettings .ps-compact-input-row .ps-input {
+      font-size: 14px !important;
+      padding-left: 8px !important;
+      padding-right: 8px !important;
+    }
+  }
+
+
+
+  /* ===== TRACK QUICK M/S VERTICAL PATCH ===== */
+  .track-left {
+    width: 128px !important;
+    padding: 6px 8px !important;
+  }
+  .track-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    width: 100%;
+  }
+  .track-title-main {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    flex: 1;
+  }
+  .track-title-main .track-name {
+    flex: 1;
+    min-width: 0;
+  }
+  .track-quick-buttons {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    width: 20px !important;
+    flex: 0 0 20px !important;
+  }
+  .track-ms-btn {
+    width: 20px !important;
+    min-width: 20px !important;
+    height: 16px !important;
+    padding: 0 !important;
+    font-size: 9px !important;
+    line-height: 14px !important;
+    border-radius: 4px !important;
+  }
+  .track-meta {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  body.landscape-layout .track-left {
+    width: 138px !important;
+  }
+  body.landscape-layout .track-quick-buttons {
+    width: 22px !important;
+    flex-basis: 22px !important;
+  }
+  body.landscape-layout .track-ms-btn {
+    width: 22px !important;
+    min-width: 22px !important;
+    height: 15px !important;
+    line-height: 13px !important;
+    font-size: 8px !important;
+  }
+
+
+
+  /* ===== TRACK LEFT ROW LAYOUT FINAL FIX =====
+     1행: M + 색점 + 제목 / 2행: S + 채널·파형 정보 */
+  .track-left {
+    width: 138px !important;
+    padding: 5px 7px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    gap: 3px !important;
+  }
+  .track-left-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    line-height: 1 !important;
+  }
+  .track-left-row .track-ms-btn {
+    width: 20px !important;
+    min-width: 20px !important;
+    height: 17px !important;
+    padding: 0 !important;
+    flex: 0 0 20px !important;
+    font-size: 9px !important;
+    line-height: 15px !important;
+    border-radius: 4px !important;
+  }
+  .track-left-row .track-name {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    margin: 0 !important;
+  }
+  .track-left-row .track-meta {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  .track-title-wrap,
+  .track-title-main,
+  .track-quick-buttons {
+    display: contents !important;
+  }
+  body.landscape-layout .track-left {
+    width: 150px !important;
+  }
+
 </style>
 </head>
 <body>
@@ -2211,6 +2477,14 @@
 <div class="ex-style-011"></div>
 </div>
 <div class="settings-content">
+<div class="settings-group" id="trackControlGroup">
+<div class="settings-label">Track</div>
+<div class="toggle-row">
+<button class="toggle-btn" id="muteBtn">Mute</button>
+<button class="toggle-btn" id="soloBtn">Solo</button>
+<button class="toggle-btn" id="ghostBtn">Ghost</button>
+</div>
+</div>
 <div class="settings-group">
 <div class="ex-style-012">
 <div class="settings-label ex-style-013">Synth</div>
@@ -2359,13 +2633,6 @@
 </div>
 </div>
 <div class="settings-group">
-<div class="settings-label">Mute / Solo</div>
-<div class="toggle-row">
-<button class="toggle-btn" id="muteBtn">Mute</button>
-<button class="toggle-btn" id="soloBtn">Solo</button>
-</div>
-</div>
-<div class="settings-group">
 <button class="danger-btn" id="deleteTrackBtn">🗑 트랙 삭제</button>
 </div>
 </div>
@@ -2468,20 +2735,17 @@
 <div class="ex-style-011"></div>
 </div>
 <div class="ps-content">
-<div class="ps-row">
-<div class="ps-label">BPM (1 – 999)</div>
-<input class="ps-input" id="bpmInput" max="999" min="1" type="number" value="120"/>
+<div class="ps-row ps-compact-project-row">
+<div class="ps-compact-label-row">
+<div class="ps-label">BPM</div>
+<div class="ps-label">박자 조절</div>
+<div class="ps-label">마디 수</div>
 </div>
-<div class="ps-row">
-<div class="ps-label">박자</div>
-<div class="ps-row-inline">
-<div>
-<div class="ex-style-051">분자</div>
+<div class="ps-compact-input-row">
+<input class="ps-input" id="bpmInput" max="1000" min="1" type="number" value="120"/>
+<div class="ps-timesig-compact">
 <input class="ps-input" id="tsNumInput" max="16" min="1" type="number" value="4"/>
-</div>
-<div class="ex-style-052">/</div>
-<div>
-<div class="ex-style-051">분모</div>
+<span>/</span>
 <select class="ps-input ex-style-053" id="tsDenInput">
 <option value="2">2</option>
 <option selected="" value="4">4</option>
@@ -2490,11 +2754,8 @@
 <option value="32">32</option>
 </select>
 </div>
-</div>
-</div>
-<div class="ps-row">
-<div class="ps-label">총 마디 수</div>
 <input class="ps-input" id="barsInput" max="999" min="1" type="number" value="4"/>
+</div>
 </div>
 <div class="ps-row ex-style-056">
 <div class="ps-label">테마</div>
@@ -3594,20 +3855,28 @@ function inputChordPadChord(rootPitch, type, exts) {
 // ============================================================
 let playbackTimer = null;
 let playbackStartTime = 0;
+let playbackStartWallTime = 0;
+let lastPlaybackTickWallTime = 0;
 let playbackStartBeat = 0;
 let playbackOriginBeat = 0; // 재생 시작한 위치 기억
 let activeOscs = []; // 재생 중인 오실레이터 목록
 
 let scheduledUntilBeat = 0; // 이미 스케줄된 마지막 박자
-const SCHEDULE_AHEAD = 2.0; // 몇 초 앞까지 스케줄할지
+const SCHEDULE_AHEAD = 6.0; // 몇 초 앞까지 스케줄할지 (백그라운드/긴 곡에서 끊김 완화)
+const PLAYBACK_START_DELAY = 0.10; // 첫 박자 노트가 AudioContext 재개/기기 지연에 먹히지 않도록 살짝 미래에 시작
+const BEAT_EPS = 1e-6; // 0박/마디 경계 노트가 부동소수점 오차로 제외되는 것 방지
 let playbackSoloOnly = false;
 let playbackTotalBeat = 0;
 
 function scheduleNote(ctx2, track, note, bps) {
   const startDelay = (note.startBeat - playbackStartBeat) / bps;
   const duration = note.lenBeats / bps;
-  const now = playbackStartTime + startDelay;
-  if (now < ctx2.currentTime - 0.1) return; // 이미 지난 노트
+  const nominalStartTime = playbackStartTime + startDelay;
+  const audioNow = ctx2.currentTime;
+  // 시작점이 아주 살짝 과거가 되는 경우가 있는데, 빠른 BPM에서는 그 차이가 한 박자처럼 체감될 수 있다.
+  // 노트가 이미 완전히 끝난 경우만 버리고, 경계 노트는 즉시/가까운 미래로 보정해서 살린다.
+  if (nominalStartTime + duration < audioNow - 0.03) return;
+  const now = Math.max(nominalStartTime, audioNow + 0.003);
 
   const osc = ctx2.createOscillator();
   const env = ctx2.createGain();
@@ -3679,7 +3948,7 @@ function scheduleAhead() {
   if (!isPlaying) return;
   const ctx2 = getAudioCtx();
   const bps = project.bpm / 60;
-  const elapsed = ctx2.currentTime - playbackStartTime;
+  const elapsed = Math.max(0, ctx2.currentTime - playbackStartTime);
   const currentBeat = playbackStartBeat + elapsed * bps;
   const scheduleUntilBeat = currentBeat + SCHEDULE_AHEAD * bps;
 
@@ -3695,14 +3964,63 @@ function scheduleAhead() {
     if (hasSolo && !track.solo) return;
     (track.notes || []).forEach(note => {
       // 아직 스케줄 안 된 범위의 노트만
-      if (note.startBeat < scheduledUntilBeat) return;
-      if (note.startBeat > scheduleUntilBeat) return;
-      if (note.startBeat < playbackStartBeat) return;
+      if (note.startBeat < scheduledUntilBeat - BEAT_EPS) return;
+      if (note.startBeat > scheduleUntilBeat + BEAT_EPS) return;
+      if (note.startBeat + note.lenBeats < playbackStartBeat - BEAT_EPS) return;
       scheduleNote(ctx2, track, note, bps);
     });
   });
 
   scheduledUntilBeat = scheduleUntilBeat;
+}
+
+function getPlaybackBeatFromAudioClock() {
+  if (!audioCtx) return PR.playPos || playbackStartBeat || 0;
+  const bps = Math.max(0.001, (project.bpm || 120) / 60);
+  return playbackStartBeat + Math.max(0, audioCtx.currentTime - playbackStartTime) * bps;
+}
+
+function getPlaybackBeatFromWallClock() {
+  const bps = Math.max(0.001, (project.bpm || 120) / 60);
+  return playbackStartBeat + Math.max(0, performance.now() - playbackStartWallTime) / 1000 * bps;
+}
+
+function resyncPlaybackAfterThrottle(reason = '') {
+  if (!isPlaying) return;
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') {
+    try { ctx.resume(); } catch(e) {}
+  }
+  const bps = Math.max(0.001, (project.bpm || 120) / 60);
+  let beat = getPlaybackBeatFromAudioClock();
+  // 탭이 멈춰 있거나 모바일 브라우저가 AudioContext를 정지시킨 경우에는 벽시계 기준으로 보정
+  const wallBeat = getPlaybackBeatFromWallClock();
+  if (!Number.isFinite(beat) || Math.abs(wallBeat - beat) > bps * 0.75) beat = wallBeat;
+
+  if (playbackTotalBeat > 0) {
+    if (loopEnabled) {
+      beat = ((beat % playbackTotalBeat) + playbackTotalBeat) % playbackTotalBeat;
+    } else if (beat >= playbackTotalBeat) {
+      PR.playPos = playbackOriginBeat;
+      stopPlayback();
+      resetTransportAfterStop();
+      return;
+    }
+  }
+
+  PR.playPos = Math.max(0, beat);
+  playbackStartBeat = PR.playPos;
+  playbackStartTime = ctx.currentTime;
+  playbackStartWallTime = performance.now();
+  lastPlaybackTickWallTime = playbackStartWallTime;
+  // 백그라운드에서 예약 간격이 비어버린 뒤 복귀할 때, 현재 위치부터 다시 예약한다.
+  scheduledUntilBeat = playbackStartBeat - BEAT_EPS;
+  scheduleAhead();
+  updateMainProgressScroll();
+  drawMainProgress();
+  if (prCtx && !document.getElementById('mainScreen').classList.contains('active')) {
+    drawPRAndTimeline();
+  }
 }
 
 function startPlayback(soloOnly = false) {
@@ -3713,10 +4031,13 @@ function startPlayback(soloOnly = false) {
   playbackSoloOnly = soloOnly;
   playbackOriginBeat = PR.playPos;
   playbackStartBeat = PR.playPos;
-  playbackStartTime = ctx.currentTime;
+  // 시작을 아주 살짝 미래로 잡아 첫 마디/첫 음이 브라우저 오디오 재개 지연에 먹히지 않게 한다.
+  playbackStartTime = ctx.currentTime + PLAYBACK_START_DELAY;
+  playbackStartWallTime = performance.now() + PLAYBACK_START_DELAY * 1000;
+  lastPlaybackTickWallTime = playbackStartWallTime;
   isPlaying = true;
   activeOscs = [];
-  scheduledUntilBeat = playbackStartBeat;
+  scheduledUntilBeat = playbackStartBeat - BEAT_EPS;
 
   const bps = project.bpm / 60;
   let lastNoteBeat = 0;
@@ -3741,8 +4062,15 @@ function startPlayback(soloOnly = false) {
 
   // Playhead animation
   playbackTimer = setInterval(() => {
-    const elapsed = getAudioCtx().currentTime - playbackStartTime;
-    PR.playPos = playbackStartBeat + elapsed * bps;
+    const tickNow = performance.now();
+    const tickGap = tickNow - lastPlaybackTickWallTime;
+    lastPlaybackTickWallTime = tickNow;
+    // 백그라운드 탭/다른 창 전환 뒤 타이머가 늦게 돌아오면 오디오 시간으로 즉시 재동기화
+    if (tickGap > 750) {
+      resyncPlaybackAfterThrottle('timer-throttle');
+      return;
+    }
+    PR.playPos = getPlaybackBeatFromAudioClock();
     if (PR.playPos >= playbackTotalBeat) {
       // 반복 모드면 맨 처음으로 돌아가 다시 재생 (이전 릴리즈 자연 소멸)
       if (loopEnabled) {
@@ -3799,6 +4127,63 @@ function stopPlayback() {
     } catch(e) {}
   });
   activeOscs = [];
+}
+
+
+function stopScheduledPlaybackVoicesNow() {
+  const ctx = audioCtx || null;
+  const now = ctx ? ctx.currentTime : 0;
+  activeOscs.forEach(({osc, env}) => {
+    try {
+      if (env && env.gain) {
+        env.gain.cancelScheduledValues(now);
+        env.gain.setValueAtTime(0, now);
+      }
+      if (osc && typeof osc.stop === 'function') osc.stop(now + 0.01);
+    } catch(e) {}
+  });
+  activeOscs = [];
+}
+
+function refreshLiveMuteSoloPlayback() {
+  if (!isPlaying) return;
+  const ctx = getAudioCtx();
+  if (ctx.state === 'suspended') {
+    try { ctx.resume(); } catch(e) {}
+  }
+
+  const bps = Math.max(0.001, (project.bpm || 120) / 60);
+  let beat = playbackStartBeat + Math.max(0, ctx.currentTime - playbackStartTime) * bps;
+  if (!Number.isFinite(beat)) beat = PR.playPos || playbackStartBeat || 0;
+
+  if (playbackTotalBeat > 0 && loopEnabled) {
+    beat = ((beat % playbackTotalBeat) + playbackTotalBeat) % playbackTotalBeat;
+  }
+
+  // 이미 예약된 노트는 예전 mute/solo 상태를 물고 있으므로 전부 끊고 현재 위치부터 다시 예약한다.
+  stopScheduledPlaybackVoicesNow();
+  PR.playPos = Math.max(0, beat);
+  playbackStartBeat = PR.playPos;
+  playbackStartTime = ctx.currentTime;
+  playbackStartWallTime = performance.now();
+  lastPlaybackTickWallTime = playbackStartWallTime;
+  scheduledUntilBeat = playbackStartBeat - BEAT_EPS;
+
+  if (masterGain) {
+    const hasSolo = project.tracks.some(t => t && t.solo);
+    const activeTracks = project.tracks.filter(t => {
+      if (!t || t.muted || !t.notes || !t.notes.length) return false;
+      if (playbackSoloOnly) return project.tracks[currentTrackIdx] === t;
+      if (hasSolo && !t.solo) return false;
+      return true;
+    }).length;
+    masterGain.gain.value = Math.max(0.05, 0.25 / Math.sqrt(Math.max(1, activeTracks)));
+  }
+
+  scheduleAhead();
+  drawMainProgress();
+  refreshAllPreviews();
+  if (prCtx) { drawPR(); drawTimeline(); }
 }
 
 // ============================================================
@@ -4348,18 +4733,20 @@ function renderTrackList() {
     const left = document.createElement('div');
     left.className = 'track-left';
     const color = track.color || '#c084fc';
+    const metaText = `Ch.${i+1} · ${track.waveType === 'wavetable' ? (track.wtTypeA||'SINE').toUpperCase()+'⟷'+(track.wtTypeB||'SQR').toUpperCase() + (track.noiseMix > 0 ? '+🌫️' : '') : track.waveType === 'noise' ? '🌫️NOISE' : (track.waveType||'WT').toUpperCase()}${track.muted?' · MUTE':''}${track.solo?' · SOLO':''}`;
     left.innerHTML = `
-      <div style="display:flex;align-items:center;gap:6px;">
+      <div class="track-left-row track-left-row-name">
+        <button class="track-ms-btn track-mute-btn${track.muted ? ' active' : ''}" data-idx="${i}" title="뮤트">M</button>
         <div class="track-color-dot" data-idx="${i}" style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;cursor:pointer;"></div>
-        <div style="display:flex;align-items:center;gap:4px;">
-          <div class="track-name" data-idx="${i}" title="더블탭으로 이름 편집">${track.name || track.color || '#000000'}</div>
-          <div class="track-ghost-btn" data-idx="${i}" title="고스트 노트" style="font-size:10px;cursor:pointer;background:${track.ghost !== false ? 'var(--accent)' : 'var(--bg3)'};border:1px solid ${track.ghost !== false ? 'var(--accent)' : 'var(--border)'};border-radius:4px;padding:2px 4px;flex-shrink:0;line-height:1;">👻</div>
-        </div>
+        <div class="track-name" data-idx="${i}" title="더블탭으로 이름 편집">${track.name || track.color || '#000000'}</div>
       </div>
-      <div class="track-meta">Ch.${i+1} · ${track.waveType === 'wavetable' ? (track.wtTypeA||'SINE').toUpperCase()+'⟷'+(track.wtTypeB||'SQR').toUpperCase() + (track.noiseMix > 0 ? '+🌫️' : '') : track.waveType === 'noise' ? '🌫️NOISE' : (track.waveType||'WT').toUpperCase()}${track.muted?' · MUTE':''}${track.solo?' · SOLO':''}</div>
+      <div class="track-left-row track-left-row-meta">
+        <button class="track-ms-btn track-solo-btn${track.solo ? ' solo-active' : ''}" data-idx="${i}" title="솔로">S</button>
+        <div class="track-meta">${metaText}</div>
+      </div>
     `;
     left.addEventListener('click', e => {
-      if (e.target.closest('.track-ghost-btn') || e.target.closest('.track-color-dot')) return;
+      if (e.target.closest('.track-ms-btn') || e.target.closest('.track-color-dot')) return;
       openSettings(i);
     });
 
@@ -4384,16 +4771,27 @@ function renderTrackList() {
         const idx = parseInt(dotEl.dataset.idx);
         pickTrackColor(idx, dotEl);
       }
-      const ghostEl = e.target.closest('.track-ghost-btn');
-      if (ghostEl) {
+      const muteEl = e.target.closest('.track-mute-btn');
+      if (muteEl) {
         e.stopPropagation();
         e.preventDefault();
-        const idx = parseInt(ghostEl.dataset.idx);
-        project.tracks[idx].ghost = project.tracks[idx].ghost === false ? true : false;
-        const isOn = project.tracks[idx].ghost !== false;
-        ghostEl.style.background = isOn ? 'var(--accent)' : 'var(--bg3)';
-        ghostEl.style.border = `1px solid ${isOn ? 'var(--accent)' : 'var(--border)'}`;
+        const idx = parseInt(muteEl.dataset.idx);
+        project.tracks[idx].muted = !project.tracks[idx].muted;
+        renderTrackList();
+        refreshLiveMuteSoloPlayback();
         scheduleAutoSave();
+        return;
+      }
+      const soloEl = e.target.closest('.track-solo-btn');
+      if (soloEl) {
+        e.stopPropagation();
+        e.preventDefault();
+        const idx = parseInt(soloEl.dataset.idx);
+        project.tracks[idx].solo = !project.tracks[idx].solo;
+        renderTrackList();
+        refreshLiveMuteSoloPlayback();
+        scheduleAutoSave();
+        return;
       }
     });
 
@@ -4459,13 +4857,13 @@ function drawTrackPreview(canvas, track) {
   const tb = project.bars * project.timeNum;
 
   // 진행바와 픽셀 단위로 정확히 맞추기
-  // 진행바에서 재생바 X = TRACK_LEFT_W + PR.playPos * beatW - mainProgressScrollX
-  // 미리보기는 TRACK_LEFT_W 이후 부분만 보여주므로
+  // 진행바에서 재생바 X = getMainProgressLeftW() + PR.playPos * beatW - mainProgressScrollX
+  // 미리보기는 getMainProgressLeftW() 이후 부분만 보여주므로
   // 미리보기 X = 진행바에서의 롤 영역 X * (W / rollW)
   // drawMainProgress와 동일한 beatW 사용 (전역 공유)
   const mainWrap = document.getElementById('mainProgressWrap');
   const mainW = Math.max(1, mainWrap.offsetWidth || window.innerWidth);
-  const rollW = Math.max(1, mainW - TRACK_LEFT_W);
+  const rollW = Math.max(1, mainW - getMainProgressLeftW());
   const beatW = mainProgressBeatW || Math.max(20, rollW * 2 / tb);
   const scale = W / rollW;
 
@@ -4881,6 +5279,7 @@ function openSettings(i) {
   updateVolLabel(track.volume);
   document.getElementById('muteBtn').className = 'toggle-btn' + (track.muted ? ' active' : '');
   document.getElementById('soloBtn').className = 'toggle-btn' + (track.solo ? ' active solo-active' : '');
+  document.getElementById('ghostBtn').className = 'toggle-btn' + (track.ghost !== false ? ' active' : '');
   showScreen('settingsScreen');
 }
 
@@ -4948,12 +5347,25 @@ document.getElementById('muteBtn').addEventListener('click', () => {
   if (currentTrackIdx < 0) return;
   project.tracks[currentTrackIdx].muted = !project.tracks[currentTrackIdx].muted;
   document.getElementById('muteBtn').className = 'toggle-btn' + (project.tracks[currentTrackIdx].muted ? ' active' : '');
+  renderTrackList();
+  refreshLiveMuteSoloPlayback();
   scheduleAutoSave();
 });
 document.getElementById('soloBtn').addEventListener('click', () => {
   if (currentTrackIdx < 0) return;
   project.tracks[currentTrackIdx].solo = !project.tracks[currentTrackIdx].solo;
   document.getElementById('soloBtn').className = 'toggle-btn' + (project.tracks[currentTrackIdx].solo ? ' active solo-active' : '');
+  renderTrackList();
+  refreshLiveMuteSoloPlayback();
+  scheduleAutoSave();
+});
+
+document.getElementById('ghostBtn').addEventListener('click', () => {
+  if (currentTrackIdx < 0) return;
+  const track = project.tracks[currentTrackIdx];
+  track.ghost = track.ghost === false ? true : false;
+  document.getElementById('ghostBtn').className = 'toggle-btn' + (track.ghost !== false ? ' active' : '');
+  if (typeof drawPianoRoll === 'function') requestAnimationFrame(drawPianoRoll);
   scheduleAutoSave();
 });
 
@@ -6822,7 +7234,7 @@ function importMidi(buffer) {
     const totalBeatsRaw = maxTick / tpb;
     const bars = Math.max(4, Math.ceil(totalBeatsRaw / midi.timeNum));
 
-    project.bpm = Math.max(1, Math.min(999, bpm));
+    project.bpm = Math.max(1, Math.min(1000, bpm));
     project.timeNum = midi.timeNum || 4;
     project.timeDen = midi.timeDen || 4;
     project.bars = bars;
@@ -7005,7 +7417,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 0.98',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 0.997',
     () => {}, '확인', ''
   );
 });
@@ -7087,7 +7499,7 @@ document.getElementById('psSave').addEventListener('click', () => {
     if (Number.isFinite(nextTouchOffset)) touchOffsetBeats = nextTouchOffset;
   }
   let bpm = parseInt(document.getElementById('bpmInput').value);
-  bpm = Math.max(1, Math.min(999, bpm || 120));
+  bpm = Math.max(1, Math.min(1000, bpm || 120));
   let num = parseInt(document.getElementById('tsNumInput').value) || 4;
   num = Math.max(1, Math.min(16, num));
   let den = parseInt(document.getElementById('tsDenInput').value) || 4;
@@ -7700,7 +8112,7 @@ function exportMidi(programs) {
   // Tempo / Time Signature track
   // 중요: 모든 MIDI 이벤트 앞에는 delta-time이 필요하다.
   // 기존에는 tempo meta event 앞의 0x00이 빠져 일부 프로그램에서 BPM이 틀어질 수 있었다.
-  const bpm = Math.max(1, Math.min(999, parseFloat(project.bpm) || 120));
+  const bpm = Math.max(1, Math.min(1000, parseFloat(project.bpm) || 120));
   const mpb = Math.round(60000000 / bpm);
   const timeNum = Math.max(1, Math.min(255, parseInt(project.timeNum) || 4));
   const timeDen = Math.max(1, parseInt(project.timeDen) || 4);
@@ -7821,7 +8233,24 @@ let mainProgressScrollX = 0; // 진행바 스크롤 오프셋 (픽셀)
 let touchOffsetBeats = -0.125; // 터치 위치 보정 (오른손잡이 기본: 왼쪽으로 0.25박자)
 let mainProgressBeatW = 80;  // 진행바 beatW (미리보기와 공유)
 
-const TRACK_LEFT_W = 130; // 트랙 왼쪽 정보 영역 너비 (트랙과 정렬)
+function getMainProgressLeftW() {
+  // 메인 타임라인의 왼쪽 고정 영역은 실제 트랙 미리보기 시작점과 맞춘다.
+  // 트랙 구조: 드래그 핸들 + 트랙 정보 영역 + 피아노롤 미리보기
+  const firstItem = document.querySelector('.track-item');
+  const firstPreview = firstItem && firstItem.querySelector('.track-preview-canvas');
+  if (firstItem && firstPreview) {
+    const itemRect = firstItem.getBoundingClientRect();
+    const previewRect = firstPreview.getBoundingClientRect();
+    const scale = (typeof getAppScale === 'function' ? getAppScale() : 1);
+    const measured = (previewRect.left - itemRect.left) / scale;
+    if (Number.isFinite(measured) && measured > 40) return Math.round(measured);
+  }
+  const handle = document.querySelector('.track-drag-handle');
+  const left = document.querySelector('.track-left');
+  const handleW = handle ? handle.getBoundingClientRect().width / ((typeof getAppScale === 'function' ? getAppScale() : 1)) : 24;
+  const leftW = left ? left.getBoundingClientRect().width / ((typeof getAppScale === 'function' ? getAppScale() : 1)) : (document.body.classList.contains('landscape-layout') ? 150 : 138);
+  return Math.round(handleW + leftW);
+}
 
 function drawMainProgress() {
   const canvas = document.getElementById('mainProgressCanvas');
@@ -7844,25 +8273,25 @@ function drawMainProgress() {
   leftBg.addColorStop(0, theme.leftTop);
   leftBg.addColorStop(1, theme.leftBottom);
   ctx.fillStyle = leftBg;
-  ctx.fillRect(0, 0, TRACK_LEFT_W, H);
+  ctx.fillRect(0, 0, getMainProgressLeftW(), H);
   ctx.fillStyle = theme.divider;
-  ctx.fillRect(TRACK_LEFT_W - 1, 0, 1, H);
+  ctx.fillRect(getMainProgressLeftW() - 1, 0, 1, H);
   // 왼쪽 영역에 마디 이동 힌트
   ctx.fillStyle = theme.label;
   ctx.font = '11px Consolas, monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('↵', TRACK_LEFT_W / 2, H / 2 + 4);
+  ctx.fillText('↵', getMainProgressLeftW() / 2, H / 2 + 4);
   ctx.textAlign = 'left';
 
-  const rollW = W - TRACK_LEFT_W; // 실제 롤 영역 너비
+  const rollW = W - getMainProgressLeftW(); // 실제 롤 영역 너비
   const tb = totalBeats();
   const beatW = Math.max(20, rollW * 2 / tb);
   mainProgressBeatW = beatW; // 미리보기와 공유
 
   // 마디 그리드
   for (let b = 0; b <= tb; b++) {
-    const x = TRACK_LEFT_W + b * beatW - mainProgressScrollX;
-    if (x < TRACK_LEFT_W - beatW || x > W) continue;
+    const x = getMainProgressLeftW() + b * beatW - mainProgressScrollX;
+    if (x < getMainProgressLeftW() - beatW || x > W) continue;
     const isMeasure = b % project.timeNum === 0;
     if (isMeasure) {
       ctx.fillStyle = theme.measureLine;
@@ -7877,8 +8306,8 @@ function drawMainProgress() {
   }
 
   // 재생 위치
-  const px = TRACK_LEFT_W + PR.playPos * beatW - mainProgressScrollX;
-  if (px >= TRACK_LEFT_W && px <= W) {
+  const px = getMainProgressLeftW() + PR.playPos * beatW - mainProgressScrollX;
+  if (px >= getMainProgressLeftW() && px <= W) {
     ctx.fillStyle = theme.playhead;
     ctx.fillRect(px, 0, 2, H);
     ctx.beginPath();
@@ -7941,7 +8370,7 @@ function updateMainProgressScroll() {
   const canvas = document.getElementById('mainProgressCanvas');
   if (!canvas) return;
   const W = canvas.width;
-  const rollW = W - TRACK_LEFT_W;
+  const rollW = W - getMainProgressLeftW();
   const tb = totalBeats();
   const beatW = Math.max(20, rollW * 2 / tb);
   mainProgressBeatW = beatW;
@@ -7964,7 +8393,7 @@ function updateMainProgressScroll() {
   function metrics() {
     const canvas = document.getElementById('mainProgressCanvas');
     const W = Math.max(1, canvas.width || wrap.offsetWidth || window.innerWidth);
-    const rollW = Math.max(1, W - TRACK_LEFT_W);
+    const rollW = Math.max(1, W - getMainProgressLeftW());
     const tb = totalBeats();
     const beatW = Math.max(20, rollW * 2 / tb);
     mainProgressBeatW = beatW;
@@ -7978,18 +8407,18 @@ function updateMainProgressScroll() {
   }
 
   function isLeftArea(clientX) {
-    return localX(clientX) < TRACK_LEFT_W;
+    return localX(clientX) < getMainProgressLeftW();
   }
 
   function beatFromClientX(clientX) {
     const { tb, beatW } = metrics();
-    const x = localX(clientX) - TRACK_LEFT_W + mainProgressScrollX;
+    const x = localX(clientX) - getMainProgressLeftW() + mainProgressScrollX;
     return Math.max(0, Math.min(tb, x / beatW));
   }
 
   function playheadLocalX() {
     const { beatW } = metrics();
-    return TRACK_LEFT_W + PR.playPos * beatW - mainProgressScrollX;
+    return getMainProgressLeftW() + PR.playPos * beatW - mainProgressScrollX;
   }
 
   function maxScrollX() {
@@ -8764,13 +9193,20 @@ function showAutoSaveIndicator() {
   ind._timer = setTimeout(() => ind.style.opacity = '0', 2000);
 }
 
-// 백그라운드 전환 시 즉시 저장
+// 백그라운드 전환 시 즉시 저장 + 복귀 시 재생 위치/예약 복구
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && autoSaveEnabled) {
-    clearTimeout(autoSaveTimer);
-    autoSaveNow();
+  if (document.hidden) {
+    if (autoSaveEnabled) {
+      clearTimeout(autoSaveTimer);
+      autoSaveNow();
+    }
+  } else {
+    resyncPlaybackAfterThrottle('visible');
   }
 });
+
+window.addEventListener('focus', () => resyncPlaybackAfterThrottle('focus'));
+window.addEventListener('pageshow', () => resyncPlaybackAfterThrottle('pageshow'));
 
 document.getElementById('autoSaveSetupBtn').addEventListener('click', async () => {
   if (!window.showSaveFilePicker) {
