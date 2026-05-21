@@ -2232,6 +2232,15 @@
   }
 
 
+  /* ===== PROJECT NAME IN SETTINGS PATCH ===== */
+  #projSettings .ps-name-row {
+    margin-bottom: 12px !important;
+  }
+  #projSettings .ps-name-row .ps-input {
+    font-size: 15px !important;
+  }
+
+
   /* ===== COMPACT PROJECT SETTINGS PATCH =====
      BPM / 박자 / 마디 수를 한 줄 구성으로 압축한다. */
   #projSettings .ps-content {
@@ -2735,6 +2744,10 @@
 <div class="ex-style-011"></div>
 </div>
 <div class="ps-content">
+<div class="ps-row ps-name-row">
+<div class="ps-label">프로젝트 이름</div>
+<input class="ps-input" id="projectNameInput" maxlength="80" type="text" value="새 프로젝트"/>
+</div>
 <div class="ps-row ps-compact-project-row">
 <div class="ps-compact-label-row">
 <div class="ps-label">BPM</div>
@@ -2805,7 +2818,6 @@
 <div class="menu-item" id="menuExportSimple">🎵 MIDI 내보내기 (피아노)</div>
 <div class="menu-item" id="menuExportCustom">🎹 MIDI 내보내기 (악기 선택)</div>
 <div class="menu-item" id="menuExportAudio">🎵 오디오 내보내기</div>
-<div class="menu-item" id="menuRename">✏️ 이름 바꾸기</div>
 <div class="menu-item" id="menuSettings">⚙️ 프로젝트 설정</div>
 </div>
 </div>
@@ -7042,6 +7054,10 @@ document.getElementById('menuNew').addEventListener('click', () => {
     project = { name:randomHamsterName(), bpm:120, timeNum:4, timeDen:4, bars:16, theme:getCurrentTheme(), tracks:[] };
     PR.playPos = 0;
     mainProgressScrollX = 0;
+    autoSaveEnabled = false;
+    autoSaveFileHandle = null;
+    PR.playPos = 0;
+    mainProgressScrollX = 0;
     renderTrackList();
     updateBpmDisplay();
     drawMainProgress();
@@ -7222,7 +7238,13 @@ function parseMidi(buffer) {
   return { format, ticksPerBeat, tempo: globalTempo, timeNum, timeDen, tracks: parsedTracks };
 }
 
-function importMidi(buffer) {
+function midiProjectNameFromFile(fileName) {
+  return (fileName || 'MIDI 프로젝트')
+    .replace(/\.(mid|midi)$/i, '')
+    .trim() || 'MIDI 프로젝트';
+}
+
+function importMidi(buffer, sourceFileName = '') {
   try {
     const midi = parseMidi(buffer);
     const bpm = Math.round(60000000 / midi.tempo);
@@ -7238,6 +7260,8 @@ function importMidi(buffer) {
     project.timeNum = midi.timeNum || 4;
     project.timeDen = midi.timeDen || 4;
     project.bars = bars;
+    project.name = midiProjectNameFromFile(sourceFileName);
+    project.theme = getCurrentTheme();
     project.tracks = [];
 
     midi.tracks.forEach((notes, i) => {
@@ -7264,14 +7288,20 @@ function importMidi(buffer) {
 
     renderTrackList();
     updateBpmDisplay();
-    showConfirm(`MIDI 불러오기 완료!\n트랙 ${project.tracks.length}개  ·  ${bpm} BPM`, () => {}, '확인', '');
+    showConfirm(`MIDI 불러오기 완료!\n${project.name}\n트랙 ${project.tracks.length}개  ·  ${bpm} BPM`, () => {}, '확인', '');
   } catch(e) {
     showConfirm('MIDI 파일을 읽을 수 없어요:\n' + e.message, () => {}, '확인', '');
   }
 }
 
 document.getElementById('menuImportMidi').addEventListener('click', () => {
-  document.getElementById('midiFileInput').click();
+  const hasNotes = project.tracks.some(t => t.notes && t.notes.length > 0);
+  const doImport = () => document.getElementById('midiFileInput').click();
+  if (hasNotes) {
+    showConfirm('MIDI를 불러오면 현재 프로젝트가 사라져요.\n계속할까요?', doImport, '불러오기', '취소');
+  } else {
+    doImport();
+  }
   closeMenu();
 });
 
@@ -7279,7 +7309,7 @@ document.getElementById('midiFileInput').addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = ev => importMidi(ev.target.result);
+  reader.onload = ev => importMidi(ev.target.result, file.name);
   reader.readAsArrayBuffer(file);
   e.target.value = '';
 });
@@ -7374,11 +7404,14 @@ document.getElementById('midiExportOk').addEventListener('click', () => {
   exportMidi(programs);
 });
 
-document.getElementById('menuRename').addEventListener('click', () => {
-  document.getElementById('renameInput').value = project.name;
-  document.getElementById('renameOverlay').classList.add('open');
-  closeMenu();
-});
+const menuRenameEl = document.getElementById('menuRename');
+if (menuRenameEl) {
+  menuRenameEl.addEventListener('click', () => {
+    document.getElementById('renameInput').value = project.name;
+    document.getElementById('renameOverlay').classList.add('open');
+    closeMenu();
+  });
+}
 document.getElementById('renameCancel').addEventListener('click', () => {
   document.getElementById('renameOverlay').classList.remove('open');
 });
@@ -7399,6 +7432,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
     statusLabel.textContent = '비활성화됨';
     setupBtn.textContent = '🔄 자동저장 위치 지정...';
   }
+  document.getElementById('projectNameInput').value = project.name || '새 프로젝트';
   document.getElementById('bpmInput').value = project.bpm;
   // 터치 보정 버튼 상태 반영
   document.querySelectorAll('.ps-touch-btn').forEach(btn => {
@@ -7417,7 +7451,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 0.997',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 0.999',
     () => {}, '확인', ''
   );
 });
@@ -7498,6 +7532,7 @@ document.getElementById('psSave').addEventListener('click', () => {
     const nextTouchOffset = parseFloat(activeBtn.dataset.val);
     if (Number.isFinite(nextTouchOffset)) touchOffsetBeats = nextTouchOffset;
   }
+  project.name = (document.getElementById('projectNameInput').value || '').trim() || '새 프로젝트';
   let bpm = parseInt(document.getElementById('bpmInput').value);
   bpm = Math.max(1, Math.min(1000, bpm || 120));
   let num = parseInt(document.getElementById('tsNumInput').value) || 4;
