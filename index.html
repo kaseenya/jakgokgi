@@ -4142,6 +4142,32 @@ function stopPlayback() {
 }
 
 
+
+function stopPlaybackAndRewindForLoad() {
+  // 프로젝트/MIDI처럼 곡 전체가 교체되는 불러오기에서는
+  // 이전 곡의 예약음과 재생 UI를 확실히 정리하고 맨 앞으로 돌린다.
+  if (isPlaying || playbackTimer || activeOscs.length) {
+    stopPlayback();
+  }
+  PR.playPos = 0;
+  mainProgressScrollX = 0;
+  playbackOriginBeat = 0;
+  playbackStartBeat = 0;
+  playbackStartWallTime = 0;
+  lastPlaybackTickWallTime = 0;
+
+  const playBtn = document.getElementById('playBtn');
+  if (playBtn) {
+    playBtn.textContent = '▶';
+    playBtn.classList.remove('playing');
+  }
+  if (typeof resetPRPlayBtns === 'function') resetPRPlayBtns();
+  if (typeof drawMainProgress === 'function') drawMainProgress();
+  if (typeof refreshAllPreviews === 'function') refreshAllPreviews();
+  if (typeof drawPR === 'function') drawPR();
+  if (typeof drawTimeline === 'function') drawTimeline();
+}
+
 function stopScheduledPlaybackVoicesNow() {
   const ctx = audioCtx || null;
   const now = ctx ? ctx.currentTime : 0;
@@ -7094,7 +7120,9 @@ document.getElementById('fileInput').addEventListener('change', e => {
   const reader = new FileReader();
   reader.onload = ev => {
     try {
-      project = JSON.parse(ev.target.result);
+      const loadedProject = JSON.parse(ev.target.result);
+      stopPlaybackAndRewindForLoad();
+      project = loadedProject;
       normalizeProjectAfterLoad();
       applyTheme(project.theme, { persist: true });
       autoSaveEnabled = false;
@@ -7247,6 +7275,7 @@ function midiProjectNameFromFile(fileName) {
 function importMidi(buffer, sourceFileName = '') {
   try {
     const midi = parseMidi(buffer);
+    stopPlaybackAndRewindForLoad();
     const bpm = Math.round(60000000 / midi.tempo);
     const tpb = midi.ticksPerBeat;
 
@@ -7457,6 +7486,7 @@ document.getElementById('creditBtn').addEventListener('click', () => {
 });
 
 async function loadProjectFromObject(nextProject, { resetAutoSave = true } = {}) {
+  stopPlaybackAndRewindForLoad();
   project = nextProject;
   normalizeProjectAfterLoad();
   applyTheme(project.theme, { persist: true });
