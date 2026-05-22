@@ -1494,6 +1494,455 @@
   }
 
 
+  /* ===== TYPEWRITER FLAT PAPER PATCH =====
+     종이 질감은 남기고, 큰 면의 그라데이션을 제거. */
+  html.theme-typewriter {
+    --gloss: #eee2c7;
+  }
+  html.theme-typewriter body {
+    background:
+      repeating-linear-gradient(0deg, rgba(48,34,18,0.030) 0 1px, transparent 1px 6px),
+      repeating-linear-gradient(90deg, rgba(48,34,18,0.020) 0 1px, transparent 1px 9px),
+      #dfd0ad !important;
+  }
+  html.theme-typewriter .screen,
+  html.theme-typewriter .topbar,
+  html.theme-typewriter .pr-btnbar,
+  html.theme-typewriter .pr-btnbar-bottom,
+  html.theme-typewriter .pr-timeline,
+  html.theme-typewriter .chord-pad,
+  html.theme-typewriter .main-progress-wrap,
+  html.theme-typewriter .track-item,
+  html.theme-typewriter .settings-content,
+  html.theme-typewriter .ps-content,
+  html.theme-typewriter .menu-panel,
+  html.theme-typewriter .rename-box,
+  html.theme-typewriter #confirmOverlay > div,
+  html.theme-typewriter #audioExportOverlay > div,
+  html.theme-typewriter #midiExportOverlay > div {
+    background: #eee2c7 !important;
+  }
+  html.theme-typewriter .topbar-btn,
+  html.theme-typewriter .pr-btn,
+  html.theme-typewriter .chord-pad-btn,
+  html.theme-typewriter .wave-type-btn,
+  html.theme-typewriter .wt-preset-btn,
+  html.theme-typewriter .toggle-btn,
+  html.theme-typewriter .ps-touch-btn,
+  html.theme-typewriter .rename-btns button,
+  html.theme-typewriter #wavePreviewBtn,
+  html.theme-typewriter #samplerLoadBtn,
+  html.theme-typewriter #samplerTrimBtn,
+  html.theme-typewriter #samplerPreviewBtn,
+  html.theme-typewriter #creditBtn,
+  html.theme-typewriter #sampleProjectBtn,
+  html.theme-typewriter #autoSaveSetupBtn,
+  html.theme-typewriter .ps-save-btn {
+    background: #f3e7ca !important;
+  }
+  html.theme-typewriter .topbar-btn:active,
+  html.theme-typewriter .pr-btn:active,
+  html.theme-typewriter .pr-btn.active,
+  html.theme-typewriter .chord-pad-btn:active,
+  html.theme-typewriter .chord-pad-btn.active,
+  html.theme-typewriter .wave-type-btn.active,
+  html.theme-typewriter .wt-preset-btn.active,
+  html.theme-typewriter .toggle-btn.active,
+  html.theme-typewriter .ps-touch-btn.active {
+    background: #d0aa70 !important;
+  }
+  html.theme-typewriter .pr-btn.play-btn,
+  html.theme-typewriter .chord-pad-play,
+  html.theme-typewriter .transport-btn.playing,
+  html.theme-typewriter .transport-btn.loop-active,
+  html.theme-typewriter .topbar-btn.loop-active,
+  html.theme-typewriter #loopBtn.loop-active,
+  html.theme-typewriter #loopBtnPR.loop-active {
+    background: #8fa66d !important;
+  }
+  html.theme-typewriter .pr-scroll,
+  html.theme-typewriter .tracklist,
+  html.theme-typewriter .pr-keys,
+  html.theme-typewriter .pr-timeline-keys,
+  html.theme-typewriter .track-left,
+  html.theme-typewriter .pr-key.white,
+  html.theme-typewriter .pr-key.black,
+  html.theme-typewriter .track-preview-canvas,
+  html.theme-typewriter .wt-draw-canvas,
+  html.theme-typewriter .wt-3d-canvas,
+  html.theme-typewriter #adsrCanvas,
+  html.theme-typewriter #samplerWaveCanvas {
+    background: #eadabc !important;
+  }
+  html.theme-typewriter .pr-key.black {
+    background: #3f3121 !important;
+  }
+  html.theme-typewriter input[type=range] {
+    background: #b0892f !important;
+  }
+  html.theme-typewriter input[type=range]::-webkit-slider-thumb {
+    background: #d1b47b !important;
+  }
+
+  /* ===== FRUITS THEME =====
+     FL Studio 느낌의 어두운 회록색 작업실 + 과일색 포인트. */
+  html.theme-fruits {
+    --bg: #171d1a;
+    --bg2: #202823;
+    --bg3: #2b352e;
+    --border: #3f4d43;
+    --accent: #ff9736;
+    --accent2: #ff5f7e;
+    --accent3: #8bd648;
+    --accent4: #ffd24a;
+    --text: #e3eadf;
+    --text2: #aab8a7;
+    --text3: #6f7f72;
+    --fruits-panel: #222b26;
+    --fruits-panel2: #2c342d;
+    --fruits-shadow: 0 8px 22px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+  html.theme-fruits body {
+    background: #171d1a !important;
+    color: var(--text) !important;
+  }
+  html.theme-fruits body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 8px),
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.10) 0 1px, transparent 1px 24px);
+    opacity: 0.8;
+    z-index: 0;
+  }
+  html.theme-fruits .screen { background: #1b211e !important; }
+  html.theme-fruits .topbar,
+  html.theme-fruits .pr-btnbar,
+  html.theme-fruits .pr-btnbar-bottom,
+  html.theme-fruits .pr-timeline,
+  html.theme-fruits .chord-pad,
+  html.theme-fruits .main-progress-wrap,
+  html.theme-fruits .track-item,
+  html.theme-fruits .settings-content,
+  html.theme-fruits .ps-content {
+    background: var(--fruits-panel) !important;
+    border-color: var(--border) !important;
+    box-shadow: var(--fruits-shadow) !important;
+    backdrop-filter: none !important;
+  }
+  html.theme-fruits .topbar { border-bottom: 2px solid #334034 !important; }
+  html.theme-fruits .topbar-btn,
+  html.theme-fruits .pr-btn,
+  html.theme-fruits .chord-pad-btn,
+  html.theme-fruits .wave-type-btn,
+  html.theme-fruits .wt-preset-btn,
+  html.theme-fruits .toggle-btn,
+  html.theme-fruits .ps-touch-btn,
+  html.theme-fruits .rename-btns button,
+  html.theme-fruits #wavePreviewBtn,
+  html.theme-fruits #samplerLoadBtn,
+  html.theme-fruits #samplerTrimBtn,
+  html.theme-fruits #samplerPreviewBtn,
+  html.theme-fruits #creditBtn,
+  html.theme-fruits #sampleProjectBtn,
+  html.theme-fruits #autoSaveSetupBtn,
+  html.theme-fruits .ps-save-btn {
+    background: #303a33 !important;
+    border: 1px solid #475748 !important;
+    color: #dce6da !important;
+    border-radius: 6px !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 0 rgba(0,0,0,0.28) !important;
+    text-shadow: none !important;
+    font-weight: 700;
+  }
+  html.theme-fruits .topbar-btn:active,
+  html.theme-fruits .pr-btn:active,
+  html.theme-fruits .pr-btn.active,
+  html.theme-fruits .chord-pad-btn:active,
+  html.theme-fruits .chord-pad-btn.active,
+  html.theme-fruits .wave-type-btn.active,
+  html.theme-fruits .wt-preset-btn.active,
+  html.theme-fruits .toggle-btn.active,
+  html.theme-fruits .ps-touch-btn.active {
+    background: #ff9736 !important;
+    border-color: #ffb066 !important;
+    color: #241000 !important;
+    transform: translateY(1px);
+  }
+  html.theme-fruits .pr-btn.play-btn,
+  html.theme-fruits .chord-pad-play,
+  html.theme-fruits .transport-btn.playing,
+  html.theme-fruits .transport-btn.loop-active,
+  html.theme-fruits .topbar-btn.loop-active,
+  html.theme-fruits #loopBtn.loop-active,
+  html.theme-fruits #loopBtnPR.loop-active {
+    background: #8bd648 !important;
+    border-color: #b3f779 !important;
+    color: #14200e !important;
+    box-shadow: 0 0 12px rgba(139,214,72,0.30), inset 0 1px 0 rgba(255,255,255,0.18) !important;
+  }
+  html.theme-fruits .transport-btn {
+    color: #b7c8b4 !important;
+    background: transparent !important;
+    border-radius: 6px !important;
+  }
+  html.theme-fruits .transport-btn:active { color: #ff9736 !important; background: rgba(255,151,54,0.12) !important; }
+  html.theme-fruits .pr-scroll,
+  html.theme-fruits .tracklist { background: #1e2622 !important; }
+  html.theme-fruits .pr-keys,
+  html.theme-fruits .pr-timeline-keys,
+  html.theme-fruits .track-left { background: #2c342d !important; border-color: #3f4d43 !important; }
+  html.theme-fruits .pr-key.white { background: #27302a !important; color: #788878 !important; }
+  html.theme-fruits .pr-key.black { background: #1b221e !important; color: #6d7b6d !important; }
+  html.theme-fruits .track-name,
+  html.theme-fruits #settingsTrackName,
+  html.theme-fruits #prTrackName { color: #eef6eb !important; }
+  html.theme-fruits .track-meta,
+  html.theme-fruits .settings-label,
+  html.theme-fruits .ps-label,
+  html.theme-fruits .chord-pad-label,
+  html.theme-fruits .bpm-display,
+  html.theme-fruits .ex-style-010 { color: #88988a !important; }
+  html.theme-fruits .track-preview-canvas,
+  html.theme-fruits .wt-draw-canvas,
+  html.theme-fruits .wt-3d-canvas,
+  html.theme-fruits #adsrCanvas,
+  html.theme-fruits #samplerWaveCanvas {
+    background: #202823 !important;
+    border: 1px solid #3f4d43 !important;
+    border-radius: 7px !important;
+    box-shadow: inset 0 1px 6px rgba(0,0,0,0.30) !important;
+  }
+  html.theme-fruits .menu-panel,
+  html.theme-fruits .rename-box,
+  html.theme-fruits #confirmOverlay > div,
+  html.theme-fruits #audioExportOverlay > div,
+  html.theme-fruits #midiExportOverlay > div {
+    background: #252d28 !important;
+    border: 1px solid #475748 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.42) !important;
+    color: var(--text) !important;
+    backdrop-filter: none !important;
+  }
+  html.theme-fruits .ps-input,
+  html.theme-fruits .rename-input,
+  html.theme-fruits .adsr-input,
+  html.theme-fruits select.pr-btn,
+  html.theme-fruits select {
+    background: #1c2420 !important;
+    border: 1px solid #475748 !important;
+    color: #e3eadf !important;
+    border-radius: 6px !important;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.28) !important;
+  }
+  html.theme-fruits input[type=range] { background: #465346 !important; }
+  html.theme-fruits input[type=range]::-webkit-slider-thumb {
+    background: #ff9736 !important;
+    border: 2px solid #ffd2a8 !important;
+  }
+  html.theme-fruits #prToast,
+  html.theme-fruits #backToast,
+  html.theme-fruits #exportDoneToast > div {
+    background: #252d28 !important;
+    color: #e3eadf !important;
+    border: 1px solid #ff9736 !important;
+  }
+
+
+  /* ===== BRASS THEME =====
+     황동 기계 패널: 무광 갈색 금속 + 주황 표시등. */
+  html.theme-brass {
+    --bg: #2b241d;
+    --bg2: #3a3027;
+    --bg3: #4a3e32;
+    --border: #7a6448;
+    --accent: #d99a3a;
+    --accent2: #b85b42;
+    --accent3: #f0b14d;
+    --accent4: #f4d08a;
+    --text: #f1e2c4;
+    --text2: #cdb992;
+    --text3: #8f7a5b;
+    --brass-panel: #3a3027;
+    --brass-panel2: #4a3e32;
+    --brass-shadow: 0 5px 14px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,220,160,0.05);
+  }
+  html.theme-brass body {
+    background: #2b241d !important;
+    color: var(--text) !important;
+  }
+  html.theme-brass body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(90deg, rgba(255,210,130,0.025) 0 1px, transparent 1px 10px),
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.10) 0 1px, transparent 1px 18px);
+    opacity: 0.72;
+    z-index: 0;
+  }
+  html.theme-brass .screen { background: #302820 !important; }
+  html.theme-brass .topbar,
+  html.theme-brass .pr-btnbar,
+  html.theme-brass .pr-btnbar-bottom,
+  html.theme-brass .pr-timeline,
+  html.theme-brass .chord-pad,
+  html.theme-brass .main-progress-wrap,
+  html.theme-brass .track-item,
+  html.theme-brass .settings-content,
+  html.theme-brass .ps-content {
+    background: var(--brass-panel) !important;
+    border-color: #6d5940 !important;
+    box-shadow: var(--brass-shadow) !important;
+    backdrop-filter: none !important;
+  }
+  html.theme-brass .topbar {
+    border-bottom: 2px solid #7a6448 !important;
+  }
+  html.theme-brass .topbar-btn,
+  html.theme-brass .pr-btn,
+  html.theme-brass .chord-pad-btn,
+  html.theme-brass .wave-type-btn,
+  html.theme-brass .wt-preset-btn,
+  html.theme-brass .toggle-btn,
+  html.theme-brass .ps-touch-btn,
+  html.theme-brass .rename-btns button,
+  html.theme-brass #wavePreviewBtn,
+  html.theme-brass #samplerLoadBtn,
+  html.theme-brass #samplerTrimBtn,
+  html.theme-brass #samplerPreviewBtn,
+  html.theme-brass #creditBtn,
+  html.theme-brass #sampleProjectBtn,
+  html.theme-brass #autoSaveSetupBtn,
+  html.theme-brass .ps-save-btn {
+    background: #4a3e32 !important;
+    border: 1px solid #826a4a !important;
+    color: #ead8b4 !important;
+    border-radius: 9px !important;
+    box-shadow: inset 0 1px 0 rgba(255,221,160,0.08), inset 0 -2px 0 rgba(0,0,0,0.22), 0 2px 0 rgba(0,0,0,0.30) !important;
+    text-shadow: none !important;
+    font-weight: 700;
+  }
+  html.theme-brass .topbar-btn:active,
+  html.theme-brass .pr-btn:active,
+  html.theme-brass .pr-btn.active,
+  html.theme-brass .chord-pad-btn:active,
+  html.theme-brass .chord-pad-btn.active,
+  html.theme-brass .wave-type-btn.active,
+  html.theme-brass .wt-preset-btn.active,
+  html.theme-brass .toggle-btn.active,
+  html.theme-brass .ps-touch-btn.active {
+    background: #d99a3a !important;
+    border-color: #f4c06d !important;
+    color: #2b1604 !important;
+    box-shadow: 0 0 12px rgba(217,154,58,0.30), inset 0 1px 0 rgba(255,232,178,0.25) !important;
+    transform: translateY(1px);
+  }
+  html.theme-brass .pr-btn.play-btn,
+  html.theme-brass .chord-pad-play,
+  html.theme-brass .transport-btn.playing,
+  html.theme-brass .transport-btn.loop-active,
+  html.theme-brass .topbar-btn.loop-active,
+  html.theme-brass #loopBtn.loop-active,
+  html.theme-brass #loopBtnPR.loop-active {
+    background: #f0b14d !important;
+    border-color: #ffd48a !important;
+    color: #2b1604 !important;
+    box-shadow: 0 0 15px rgba(240,177,77,0.42), inset 0 1px 0 rgba(255,236,185,0.30) !important;
+  }
+  html.theme-brass .transport-btn {
+    color: #d8c39a !important;
+    background: transparent !important;
+    border-radius: 8px !important;
+  }
+  html.theme-brass .transport-btn:active {
+    color: #ffd38a !important;
+    background: rgba(217,154,58,0.13) !important;
+  }
+  html.theme-brass .pr-scroll,
+  html.theme-brass .tracklist {
+    background: #332b23 !important;
+  }
+  html.theme-brass .pr-keys,
+  html.theme-brass .pr-timeline-keys,
+  html.theme-brass .track-left {
+    background: #4a3e32 !important;
+    border-color: #7a6448 !important;
+  }
+  html.theme-brass .pr-key.white {
+    background: #5a4a39 !important;
+    color: #d5c09a !important;
+  }
+  html.theme-brass .pr-key.black {
+    background: #29221c !important;
+    color: #a89068 !important;
+  }
+  html.theme-brass .track-name,
+  html.theme-brass #settingsTrackName,
+  html.theme-brass #prTrackName {
+    color: #f4e6c9 !important;
+  }
+  html.theme-brass .track-meta,
+  html.theme-brass .settings-label,
+  html.theme-brass .ps-label,
+  html.theme-brass .chord-pad-label,
+  html.theme-brass .bpm-display,
+  html.theme-brass .ex-style-010 {
+    color: #a89169 !important;
+  }
+  html.theme-brass .track-preview-canvas,
+  html.theme-brass .wt-draw-canvas,
+  html.theme-brass .wt-3d-canvas,
+  html.theme-brass #adsrCanvas,
+  html.theme-brass #samplerWaveCanvas {
+    background: #2f2821 !important;
+    border: 1px solid #7a6448 !important;
+    border-radius: 8px !important;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.36) !important;
+  }
+  html.theme-brass .menu-panel,
+  html.theme-brass .rename-box,
+  html.theme-brass #confirmOverlay > div,
+  html.theme-brass #audioExportOverlay > div,
+  html.theme-brass #midiExportOverlay > div {
+    background: #3f342a !important;
+    border: 1px solid #826a4a !important;
+    border-radius: 14px !important;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.45) !important;
+    color: var(--text) !important;
+    backdrop-filter: none !important;
+  }
+  html.theme-brass .ps-input,
+  html.theme-brass .rename-input,
+  html.theme-brass .adsr-input,
+  html.theme-brass select.pr-btn,
+  html.theme-brass select {
+    background: #2d261f !important;
+    border: 1px solid #826a4a !important;
+    color: #f1e2c4 !important;
+    border-radius: 8px !important;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.32) !important;
+  }
+  html.theme-brass input[type=range] {
+    background: #6e593d !important;
+  }
+  html.theme-brass input[type=range]::-webkit-slider-thumb {
+    background: #f0b14d !important;
+    border: 2px solid #ffe0a3 !important;
+  }
+  html.theme-brass #prToast,
+  html.theme-brass #backToast,
+  html.theme-brass #exportDoneToast > div {
+    background: #3f342a !important;
+    color: #f1e2c4 !important;
+    border: 1px solid #d99a3a !important;
+  }
+
+
   /* ===== PT PLATINUM THEME ===== */
   html.theme-pt {
     --bg: #bdbdbd;
@@ -1977,227 +2426,64 @@
 
 
 
-  /* ===== PIXEL ART / 16-BIT TRACKER THEME ===== */
-  html.theme-pixel {
-    --bg: #0b1020;
-    --bg2: #17213a;
-    --bg3: #263554;
-    --border: #4b5f93;
-    --accent: #42d9c8;
-    --accent2: #ff6b9a;
-    --accent3: #ffd55c;
-    --accent4: #7cff6b;
-    --text: #e5ecff;
-    --text2: #b8c7f0;
-    --text3: #768fc7;
-    --gloss: #263554;
-    --glass-shadow: 4px 4px 0 #080c18;
-    --bubble-shadow: 3px 3px 0 #080c18;
+  /* ===== CUBE / COOL DAW CONSOLE THEME ===== */
+  html.theme-cube {
+    --bg: #20272f;
+    --bg2: #2b343f;
+    --bg3: #35414d;
+    --border: #566777;
+    --accent: #c85a5a;
+    --accent2: #d8865f;
+    --accent3: #a9d96b;
+    --accent4: #79aee8;
+    --text: #e5edf2;
+    --text2: #b7c5cf;
+    --text3: #7f929f;
+    --gloss: linear-gradient(180deg, #3b4854, #2f3a45);
+    --glass-shadow: 0 1px 0 rgba(255,255,255,0.08), 0 10px 22px rgba(0,0,0,0.22);
+    --bubble-shadow: inset 0 1px 0 rgba(255,255,255,0.10), 0 1px 3px rgba(0,0,0,0.28);
   }
-
-  html.theme-pixel body {
-    background:
-      linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
-      linear-gradient(180deg, rgba(255,255,255,0.025) 1px, transparent 1px),
-      linear-gradient(180deg, #142044 0%, #0b1020 100%) !important;
-    background-size: 8px 8px, 8px 8px, auto !important;
+  html.theme-cube body {
+    background: linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(180deg, rgba(0,0,0,0.05) 1px, transparent 1px), #20272f !important;
+    background-size: 24px 24px, 24px 24px, auto !important;
     color: var(--text) !important;
-    font-smooth: never;
-    -webkit-font-smoothing: none;
-    image-rendering: pixelated;
   }
-
-  html.theme-pixel body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    background: repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 4px);
-    opacity: 0.38;
-    z-index: 0;
+  html.theme-cube body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent 18%), radial-gradient(circle at 72% 8%, rgba(105,201,212,0.09), transparent 32%);
+    opacity: 0.75; z-index: 0;
   }
-
-  html.theme-pixel .screen,
-  html.theme-pixel #pianoroll {
-    background: linear-gradient(180deg, #142044, #0b1020) !important;
+  html.theme-cube .screen, html.theme-cube #pianoroll { background: #20272f !important; }
+  html.theme-cube .topbar, html.theme-cube .pr-btnbar, html.theme-cube .pr-btnbar-bottom, html.theme-cube .pr-timeline, html.theme-cube .chord-pad, html.theme-cube .main-progress-wrap, html.theme-cube .track-item, html.theme-cube .settings-content, html.theme-cube .ps-content, html.theme-cube .menu-panel, html.theme-cube .rename-box, html.theme-cube #confirmOverlay > div, html.theme-cube #audioExportOverlay > div, html.theme-cube #midiExportOverlay > div {
+    background: linear-gradient(180deg, #303a45, #28323c) !important; border-color: var(--border) !important; box-shadow: var(--glass-shadow) !important; backdrop-filter: none !important;
   }
-
-  html.theme-pixel .topbar,
-  html.theme-pixel .pr-btnbar,
-  html.theme-pixel .pr-btnbar-bottom,
-  html.theme-pixel .pr-timeline,
-  html.theme-pixel .chord-pad,
-  html.theme-pixel .main-progress-wrap,
-  html.theme-pixel .track-item,
-  html.theme-pixel .settings-content,
-  html.theme-pixel .ps-content,
-  html.theme-pixel .menu-panel,
-  html.theme-pixel .rename-box,
-  html.theme-pixel #confirmOverlay > div,
-  html.theme-pixel #audioExportOverlay > div,
-  html.theme-pixel #midiExportOverlay > div {
-    background: var(--bg2) !important;
-    border-color: var(--border) !important;
-    box-shadow: var(--glass-shadow) !important;
-    backdrop-filter: none !important;
+  html.theme-cube .topbar { background: #313b46 !important; border-bottom: 1px solid #697b8b !important; }
+  html.theme-cube .topbar-btn, html.theme-cube .pr-btn, html.theme-cube .chord-pad-btn, html.theme-cube .wave-type-btn, html.theme-cube .wt-preset-btn, html.theme-cube .toggle-btn, html.theme-cube .ps-touch-btn, html.theme-cube .rename-btns button, html.theme-cube #wavePreviewBtn, html.theme-cube #samplerLoadBtn, html.theme-cube #samplerTrimBtn, html.theme-cube #samplerPreviewBtn, html.theme-cube #creditBtn, html.theme-cube #sampleProjectBtn, html.theme-cube #autoSaveSetupBtn, html.theme-cube .ps-save-btn {
+    background: linear-gradient(180deg, #3e4b57, #313c47) !important; border: 1px solid #647685 !important; border-radius: 5px !important; color: #dce7ed !important; box-shadow: var(--bubble-shadow) !important; text-shadow: 0 1px 0 rgba(0,0,0,0.55) !important;
   }
-
-  html.theme-pixel .topbar-btn,
-  html.theme-pixel .pr-btn,
-  html.theme-pixel .chord-pad-btn,
-  html.theme-pixel .wave-type-btn,
-  html.theme-pixel .wt-preset-btn,
-  html.theme-pixel .toggle-btn,
-  html.theme-pixel .ps-touch-btn,
-  html.theme-pixel .rename-btns button,
-  html.theme-pixel #wavePreviewBtn,
-  html.theme-pixel #samplerLoadBtn,
-  html.theme-pixel #samplerTrimBtn,
-  html.theme-pixel #samplerPreviewBtn,
-  html.theme-pixel #creditBtn,
-  html.theme-pixel #sampleProjectBtn,
-  html.theme-pixel #autoSaveSetupBtn,
-  html.theme-pixel .ps-save-btn {
-    background: var(--bg3) !important;
-    border: 2px solid #7187c4 !important;
-    border-radius: 0 !important;
-    color: var(--text) !important;
-    box-shadow: var(--bubble-shadow) !important;
-    text-shadow: 1px 1px 0 #000 !important;
-    image-rendering: pixelated;
+  html.theme-cube .topbar-btn:active, html.theme-cube .pr-btn:active, html.theme-cube .pr-btn.active, html.theme-cube .chord-pad-btn:active, html.theme-cube .chord-pad-btn.active, html.theme-cube .wave-type-btn.active, html.theme-cube .wt-preset-btn.active, html.theme-cube .toggle-btn.active, html.theme-cube .ps-touch-btn.active {
+    background: linear-gradient(180deg, #76d8e2, #49aebd) !important; border-color: #a5eef3 !important; color: #071f25 !important; text-shadow: 0 1px 0 rgba(255,255,255,0.35) !important; transform: translateY(1px) !important; box-shadow: inset 0 1px 4px rgba(0,0,0,0.22) !important;
   }
-
-  html.theme-pixel .topbar-btn:active,
-  html.theme-pixel .pr-btn:active,
-  html.theme-pixel .pr-btn.active,
-  html.theme-pixel .chord-pad-btn:active,
-  html.theme-pixel .chord-pad-btn.active,
-  html.theme-pixel .wave-type-btn.active,
-  html.theme-pixel .wt-preset-btn.active,
-  html.theme-pixel .toggle-btn.active,
-  html.theme-pixel .ps-touch-btn.active {
-    background: #42d9c8 !important;
-    border-color: #e5ecff !important;
-    color: #061018 !important;
-    text-shadow: none !important;
-    transform: translate(2px, 2px) !important;
-    box-shadow: 1px 1px 0 #080c18 !important;
+  html.theme-cube .pr-btn.play-btn, html.theme-cube .chord-pad-play, html.theme-cube .transport-btn.playing, html.theme-cube .transport-btn.loop-active, html.theme-cube .topbar-btn.loop-active, html.theme-cube #loopBtn.loop-active, html.theme-cube #loopBtnPR.loop-active {
+    background: linear-gradient(180deg, #bee87a, #83bd45) !important; border-color: #d8f4a6 !important; color: #16240a !important; text-shadow: 0 1px 0 rgba(255,255,255,0.34) !important;
   }
-
-  html.theme-pixel .pr-btn.play-btn,
-  html.theme-pixel .chord-pad-play,
-  html.theme-pixel .transport-btn.playing,
-  html.theme-pixel .transport-btn.loop-active,
-  html.theme-pixel .topbar-btn.loop-active,
-  html.theme-pixel #loopBtn.loop-active,
-  html.theme-pixel #loopBtnPR.loop-active {
-    background: #ffd55c !important;
-    border-color: #fff3b0 !important;
-    color: #1d1600 !important;
-    text-shadow: none !important;
+  html.theme-cube .transport-btn { color: #b7c5cf !important; background: transparent !important; border-radius: 5px !important; text-shadow: 0 1px 0 rgba(0,0,0,0.55) !important; }
+  html.theme-cube .transport-btn:active { background: rgba(105,201,212,0.16) !important; color: #7ee0eb !important; }
+  html.theme-cube .pr-scroll, html.theme-cube .tracklist {
+    background: linear-gradient(90deg, rgba(160,190,205,0.10) 1px, transparent 1px), linear-gradient(180deg, rgba(160,190,205,0.08) 1px, transparent 1px), #1c242c !important; background-size: 24px 24px, 12px 12px, auto !important;
   }
-
-  html.theme-pixel .transport-btn {
-    color: var(--text2) !important;
-    background: transparent !important;
-    border-radius: 0 !important;
-    text-shadow: 1px 1px 0 #000 !important;
+  html.theme-cube .pr-keys, html.theme-cube .pr-timeline-keys, html.theme-cube .track-left { background: #313b46 !important; border-color: #526575 !important; box-shadow: 3px 0 10px rgba(0,0,0,0.18) !important; }
+  html.theme-cube .pr-key.white { background: #323d48 !important; color: #b7c5cf !important; }
+  html.theme-cube .pr-key.black { background: #242d36 !important; color: #81929e !important; }
+  html.theme-cube .track-preview-canvas, html.theme-cube .wt-draw-canvas, html.theme-cube .wt-3d-canvas, html.theme-cube #adsrCanvas, html.theme-cube #samplerWaveCanvas {
+    background: linear-gradient(180deg, #222b34, #1a222a) !important; border: 1px solid #526575 !important; border-radius: 4px !important; box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 5px rgba(0,0,0,0.24) !important;
   }
-
-  html.theme-pixel .pr-scroll,
-  html.theme-pixel .tracklist {
-    background:
-      linear-gradient(90deg, rgba(118,143,199,0.16) 1px, transparent 1px),
-      linear-gradient(180deg, rgba(118,143,199,0.12) 1px, transparent 1px),
-      #0d1324 !important;
-    background-size: 16px 16px, 16px 16px, auto !important;
-  }
-
-  html.theme-pixel .pr-keys,
-  html.theme-pixel .pr-timeline-keys,
-  html.theme-pixel .track-left {
-    background: #263554 !important;
-    border-color: var(--border) !important;
-    box-shadow: 3px 0 0 #080c18 !important;
-  }
-
-  html.theme-pixel .pr-key.white {
-    background: #263554 !important;
-    color: #b8c7f0 !important;
-  }
-
-  html.theme-pixel .pr-key.black {
-    background: #111a2e !important;
-    color: #768fc7 !important;
-  }
-
-  html.theme-pixel .track-preview-canvas,
-  html.theme-pixel .wt-draw-canvas,
-  html.theme-pixel .wt-3d-canvas,
-  html.theme-pixel #adsrCanvas,
-  html.theme-pixel #samplerWaveCanvas {
-    background: #0d1324 !important;
-    border: 2px solid #4b5f93 !important;
-    border-radius: 0 !important;
-    box-shadow: 3px 3px 0 #080c18 !important;
-    image-rendering: pixelated;
-  }
-
-  html.theme-pixel .track-name,
-  html.theme-pixel #settingsTrackName,
-  html.theme-pixel #prTrackName {
-    color: #e5ecff !important;
-    text-shadow: 1px 1px 0 #000 !important;
-  }
-
-  html.theme-pixel .track-meta,
-  html.theme-pixel .settings-label,
-  html.theme-pixel .ps-label,
-  html.theme-pixel .chord-pad-label,
-  html.theme-pixel .bpm-display,
-  html.theme-pixel #themeStatusLabel {
-    color: #b8c7f0 !important;
-    text-shadow: 1px 1px 0 #000 !important;
-  }
-
-  html.theme-pixel .ps-input,
-  html.theme-pixel .rename-input,
-  html.theme-pixel .adsr-input,
-  html.theme-pixel select.pr-btn,
-  html.theme-pixel select {
-    background: #0d1324 !important;
-    border: 2px solid #4b5f93 !important;
-    border-radius: 0 !important;
-    color: #e5ecff !important;
-    box-shadow: inset 2px 2px 0 #080c18 !important;
-  }
-
-  html.theme-pixel input[type=range] {
-    height: 10px !important;
-    border-radius: 0 !important;
-    background: #0d1324 !important;
-    border: 2px solid #4b5f93 !important;
-    box-shadow: none !important;
-  }
-
-  html.theme-pixel input[type=range]::-webkit-slider-thumb {
-    width: 18px !important;
-    height: 18px !important;
-    border-radius: 0 !important;
-    background: #42d9c8 !important;
-    border: 2px solid #e5ecff !important;
-    box-shadow: 2px 2px 0 #080c18 !important;
-  }
-
-  html.theme-pixel #prToast,
-  html.theme-pixel #backToast {
-    background: #263554 !important;
-    color: #e5ecff !important;
-    border: 2px solid #7187c4 !important;
-    border-radius: 0 !important;
-    box-shadow: 4px 4px 0 #080c18 !important;
-  }
-
+  html.theme-cube .track-name, html.theme-cube #settingsTrackName, html.theme-cube #prTrackName { color: #e5edf2 !important; text-shadow: 0 1px 0 rgba(0,0,0,0.52) !important; }
+  html.theme-cube .track-meta, html.theme-cube .settings-label, html.theme-cube .ps-label, html.theme-cube .chord-pad-label, html.theme-cube .bpm-display, html.theme-cube #themeStatusLabel { color: #9dafbb !important; text-shadow: 0 1px 0 rgba(0,0,0,0.42) !important; }
+  html.theme-cube .ps-input, html.theme-cube .rename-input, html.theme-cube .adsr-input, html.theme-cube select.pr-btn, html.theme-cube select { background: #1c242c !important; border: 1px solid #526575 !important; border-radius: 4px !important; color: #e5edf2 !important; box-shadow: inset 0 1px 4px rgba(0,0,0,0.28) !important; }
+  html.theme-cube input[type=range] { height: 8px !important; border-radius: 3px !important; background: #252e37 !important; border: 1px solid #526575 !important; box-shadow: inset 0 1px 4px rgba(0,0,0,0.26) !important; }
+  html.theme-cube input[type=range]::-webkit-slider-thumb { width: 18px !important; height: 18px !important; border-radius: 4px !important; background: linear-gradient(180deg, #76d8e2, #49aebd) !important; border: 1px solid #a5eef3 !important; box-shadow: 0 2px 6px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.36) !important; }
+  html.theme-cube #prToast, html.theme-cube #backToast { background: linear-gradient(180deg, #3a4652, #2b343f) !important; color: #e5edf2 !important; border: 1px solid #647685 !important; border-radius: 6px !important; box-shadow: 0 12px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08) !important; }
 
 
   /* ===== MOBILE PROJECT SETTINGS SAFE-BOTTOM PATCH =====
@@ -2776,9 +3062,11 @@
 <button class="ps-touch-btn theme-btn" data-theme="theme-aero" id="themeAeroBtn">AERO</button>
 <button class="ps-touch-btn theme-btn" data-theme="theme-dark" id="themeDarkBtn">DARK</button>
 <button class="ps-touch-btn theme-btn" data-theme="theme-typewriter" id="themeTypewriterBtn">TYPE</button>
+<button class="ps-touch-btn theme-btn" data-theme="theme-fruits" id="themeFruitsBtn">FRUITS</button>
+<button class="ps-touch-btn theme-btn" data-theme="theme-brass" id="themeBrassBtn">BRASS</button>
 <button class="ps-touch-btn theme-btn" data-theme="theme-pt" id="themePtBtn">PT</button>
 <button class="ps-touch-btn theme-btn" data-theme="theme-crt-green" id="themeCrtGreenBtn">CRT</button>
-<button class="ps-touch-btn theme-btn" data-theme="theme-pixel" id="themePixelBtn">PIXEL</button>
+<button class="ps-touch-btn theme-btn" data-theme="theme-cube" id="themeCubeBtn">CUBE</button>
 </div>
 <div class="ex-style-010" id="themeStatusLabel">현재 테마: AERO</div>
 </div>
@@ -4239,15 +4527,17 @@ let project = {
 
 let currentTrackIdx = -1;
 
-const THEME_CLASSES = ['theme-aero', 'theme-dark', 'theme-typewriter', 'theme-pt', 'theme-crt-green', 'theme-pixel'];
+const THEME_CLASSES = ['theme-aero', 'theme-dark', 'theme-typewriter', 'theme-fruits', 'theme-brass', 'theme-pt', 'theme-crt-green', 'theme-cube'];
 const THEME_STORAGE_KEY = 'composerTheme';
 const THEME_LABELS = {
   'theme-aero': 'AERO',
   'theme-dark': 'DARK',
   'theme-typewriter': 'TYPEWRITER',
+  'theme-fruits': 'FRUITS',
+  'theme-brass': 'BRASS',
   'theme-pt': 'PT',
   'theme-crt-green': 'CRT GREEN LAB',
-  'theme-pixel': 'PIXEL'
+  'theme-cube': 'CUBE'
 };
 
 const CANVAS_THEMES = {
@@ -4308,13 +4598,13 @@ const CANVAS_THEMES = {
     divider: 'rgba(108,99,255,0.22)'
   },
   'theme-typewriter': {
-    previewTop: '#f3e6c7',
-    previewBottom: '#cdb98a',
+    previewTop: '#eadabc',
+    previewBottom: '#eadabc',
     previewStroke: 'rgba(82, 62, 34, 0.42)',
-    mainTop: '#efe2c4',
-    mainBottom: '#c7b184',
-    leftTop: '#ead9b6',
-    leftBottom: '#bda77a',
+    mainTop: '#eadabc',
+    mainBottom: '#eadabc',
+    leftTop: '#dfc99d',
+    leftBottom: '#dfc99d',
     rowWhite: '#eadabc',
     rowBlack: '#d6c198',
     rowLine: 'rgba(83, 62, 33, 0.30)',
@@ -4334,6 +4624,67 @@ const CANVAS_THEMES = {
     playhead: '#9b1c1c',
     playheadSoft: 'rgba(155, 28, 28, 0.45)',
     divider: 'rgba(83, 62, 33, 0.26)'
+  },
+  'theme-fruits': {
+    previewTop: '#1f2a25',
+    previewBottom: '#1f2a25',
+    previewStroke: 'rgba(95, 122, 104, 0.72)',
+    mainTop: '#222b26',
+    mainBottom: '#222b26',
+    leftTop: '#2c342d',
+    leftBottom: '#2c342d',
+    rowWhite: '#252e29',
+    rowBlack: '#1f2723',
+    rowLine: 'rgba(125, 150, 132, 0.18)',
+    cLine: 'rgba(255, 151, 54, 0.38)',
+    measureLine: 'rgba(255, 151, 54, 0.52)',
+    beatLine: 'rgba(125, 150, 132, 0.30)',
+    halfLine: 'rgba(125, 150, 132, 0.20)',
+    subLine: 'rgba(125, 150, 132, 0.13)',
+    timelineBg: '#1c241f',
+    timelineMeasure: 'rgba(255, 151, 54, 0.62)',
+    timelineBeat: 'rgba(125, 150, 132, 0.24)',
+    label: '#aab8a7',
+    note: '#8bd648',
+    noteStroke: '#d7ffc6',
+    noteText: '#14200e',
+    selectedNote: '#ff9736',
+    selectedStroke: '#ffe2c5',
+    selectedNoteText: '#241000',
+    playhead: '#ffd24a',
+    playheadSoft: 'rgba(255, 210, 74, 0.58)',
+    divider: 'rgba(125, 150, 132, 0.25)'
+  },
+
+  'theme-brass': {
+    previewTop: '#332b23',
+    previewBottom: '#332b23',
+    previewStroke: 'rgba(130, 106, 74, 0.78)',
+    mainTop: '#332b23',
+    mainBottom: '#332b23',
+    leftTop: '#4a3e32',
+    leftBottom: '#4a3e32',
+    rowWhite: '#3b3229',
+    rowBlack: '#2d261f',
+    rowLine: 'rgba(220, 178, 108, 0.16)',
+    cLine: 'rgba(217, 154, 58, 0.42)',
+    measureLine: 'rgba(217, 154, 58, 0.58)',
+    beatLine: 'rgba(220, 178, 108, 0.28)',
+    halfLine: 'rgba(220, 178, 108, 0.18)',
+    subLine: 'rgba(220, 178, 108, 0.12)',
+    timelineBg: '#2d261f',
+    timelineMeasure: 'rgba(217, 154, 58, 0.66)',
+    timelineBeat: 'rgba(220, 178, 108, 0.24)',
+    label: '#cdb992',
+    note: '#ffd38a',
+    noteStroke: '#6b4420',
+    noteText: '#3a2108',
+    selectedNote: '#f0b14d',
+    selectedStroke: '#ffe0a3',
+    selectedNoteText: '#2b1604',
+    playhead: '#ffb347',
+    playheadSoft: 'rgba(255, 179, 71, 0.58)',
+    divider: 'rgba(220, 178, 108, 0.22)'
   },
   'theme-pt': {
     previewTop: '#eeeeee',
@@ -4393,41 +4744,43 @@ const CANVAS_THEMES = {
     playheadSoft: 'rgba(125,255,106,0.68)',
     divider: 'rgba(92,255,141,0.22)'
   },
-  'theme-pixel': {
-    previewTop: '#1b2540',
-    previewBottom: '#0d1324',
-    previewStroke: '#3f5d99',
-    mainTop: '#16213a',
-    mainBottom: '#0a1020',
-    leftTop: '#263554',
-    leftBottom: '#131c31',
-    rowWhite: '#18243c',
-    rowBlack: '#101827',
-    rowLine: 'rgba(118, 143, 199, 0.34)',
-    cLine: 'rgba(255, 213, 92, 0.46)',
-    measureLine: 'rgba(255, 213, 92, 0.56)',
-    beatLine: 'rgba(118, 143, 199, 0.32)',
-    halfLine: 'rgba(118, 143, 199, 0.22)',
-    subLine: 'rgba(118, 143, 199, 0.15)',
-    timelineBg: '#131c31',
-    timelineMeasure: 'rgba(255, 213, 92, 0.64)',
-    timelineBeat: 'rgba(118, 143, 199, 0.28)',
-    label: '#b8c7f0',
-    note: '#42d9c8',
-    noteStroke: '#0b1020',
-    noteText: '#061018',
-    selectedNote: '#ff6b9a',
-    selectedStroke: '#0b1020',
-    selectedNoteText: '#1b0610',
-    playhead: '#ffd55c',
-    playheadSoft: 'rgba(255, 213, 92, 0.58)',
-    divider: 'rgba(118, 143, 199, 0.25)'
+  'theme-cube': {
+    previewTop: '#2b3540',
+    previewBottom: '#1c242c',
+    previewStroke: '#526575',
+    mainTop: '#303a45',
+    mainBottom: '#1f2831',
+    leftTop: '#35404b',
+    leftBottom: '#29333d',
+    rowWhite: '#252e37',
+    rowBlack: '#1c242c',
+    rowLine: 'rgba(160,190,205,0.22)',
+    cLine: 'rgba(105,201,212,0.34)',
+    measureLine: 'rgba(105,201,212,0.46)',
+    beatLine: 'rgba(160,190,205,0.24)',
+    halfLine: 'rgba(160,190,205,0.16)',
+    subLine: 'rgba(160,190,205,0.10)',
+    timelineBg: '#202a33',
+    timelineMeasure: 'rgba(105,201,212,0.56)',
+    timelineBeat: 'rgba(160,190,205,0.24)',
+    label: '#b7c5cf',
+    note: '#69c9d4',
+    noteStroke: '#0f252b',
+    noteText: '#071f25',
+    selectedNote: '#d8865f',
+    selectedStroke: '#ffe0ca',
+    selectedNoteText: '#241006',
+    playhead: '#e5edf2',
+    playheadSoft: 'rgba(105,201,212,0.64)',
+    divider: 'rgba(160,190,205,0.20)'
   }
 };
 
 function normalizeThemeName(theme) {
   // 이전 버전 호환: 예전 저장값/프로젝트 파일에 남은 이름을 새 이름으로 변환
   if (theme === 'theme-mac-platinum') return 'theme-pt';
+  if (theme === 'theme-pixel') return 'theme-cube';
+  if (theme === 'theme-elevator') return 'theme-brass';
   return theme;
 }
 
@@ -6721,6 +7074,88 @@ function showConfirm(msg, onYes, yesLabel, noLabel) {
   });
 })();
 
+
+
+// --- Piano Roll keyboard shortcuts ---
+// Delete/Backspace: 선택 노트 삭제
+// Ctrl+A: 전체 노트 선택
+// Ctrl+D: 전체 선택 해제
+(function() {
+  function isPianoRollOpen() {
+    const pr = document.getElementById('pianoroll');
+    return !!(pr && pr.classList.contains('active'));
+  }
+
+  function isEditableTarget(target) {
+    if (!target) return false;
+    const tag = (target.tagName || '').toLowerCase();
+    return target.isContentEditable || tag === 'input' || tag === 'textarea' || tag === 'select';
+  }
+
+  function selectedCount() {
+    return PR.notes.filter(n => n.selected).length;
+  }
+
+  function deleteSelectedNotesByKey() {
+    const count = selectedCount();
+    if (count <= 0) {
+      showPRToast('삭제할 노트가 없음');
+      return;
+    }
+    prSnapshot();
+    PR.notes = PR.notes.filter(n => !n.selected);
+    PR.selRect = null;
+    drawPR();
+    showPRToast(`선택 노트 삭제: ${count}개`);
+  }
+
+  function selectAllNotesByKey() {
+    if (!PR.notes || PR.notes.length === 0) {
+      showPRToast('선택할 노트가 없음');
+      return;
+    }
+    PR.selectMode = true;
+    const selectBtn = document.getElementById('selectBtn');
+    if (selectBtn) selectBtn.className = 'pr-btn active';
+    PR.notes.forEach(n => n.selected = true);
+    PR.selRect = null;
+    drawPR();
+    showPRToast(`전체 선택: ${PR.notes.length}개`);
+  }
+
+  function deselectAllNotesByKey() {
+    const count = selectedCount();
+    PR.notes.forEach(n => n.selected = false);
+    PR.selRect = null;
+    drawPR();
+    showPRToast(count > 0 ? '전체 선택 해제' : '선택된 노트 없음');
+  }
+
+  window.addEventListener('keydown', e => {
+    if (!isPianoRollOpen() || isEditableTarget(e.target)) return;
+    if (e.altKey || e.metaKey) return;
+
+    const key = e.key.toLowerCase();
+
+    if (key === 'delete' || key === 'backspace') {
+      e.preventDefault();
+      deleteSelectedNotesByKey();
+      return;
+    }
+
+    if (e.ctrlKey && key === 'a') {
+      e.preventDefault();
+      selectAllNotesByKey();
+      return;
+    }
+
+    if (e.ctrlKey && key === 'd') {
+      e.preventDefault();
+      deselectAllNotesByKey();
+    }
+  });
+})();
+
 document.getElementById('posDecBtn').addEventListener('click', () => {
   showPRToast('Pos− (위치 앞으로)');
   prSnapshot();
@@ -7480,7 +7915,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.0<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.01'<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
     () => {}, '확인', ''
   );
 });
@@ -7937,7 +8372,13 @@ async function audioBufferToCompressedBlob(buffer, mimeType, timeoutMs) {
     src.onended = () => {
       setTimeout(() => {
         try {
-          if (recorder && recorder.state !== 'inactive') recorder.stop();
+          if (recorder && recorder.state !== 'inactive') {
+            // M4A/MP4는 timeslice로 1초 조각을 만들면 일부 플레이어가
+            // 첫 조각 길이만 읽어 전체 파일을 1초로 표시하는 경우가 있다.
+            // stop 직전에 데이터를 한 번 요청하고, 하나의 MP4/M4A 파일로 마무리한다.
+            if (typeof recorder.requestData === 'function') recorder.requestData();
+            recorder.stop();
+          }
         } catch (err) {
           finish(reject, err);
         }
@@ -7956,7 +8397,14 @@ async function audioBufferToCompressedBlob(buffer, mimeType, timeoutMs) {
 
     Promise.resolve(ctx.resume()).then(() => {
       if (settled) return;
-      recorder.start(1000);
+      // M4A/MP4에서는 timeslice를 주지 않는다.
+      // recorder.start(1000)은 1초 단위 fMP4 조각을 만들 수 있고,
+      // 일부 플레이어나 파일 탐색기가 그것을 1초짜리 파일로 오인한다.
+      if (/mp4|mpeg|aac/i.test(mimeType)) {
+        recorder.start();
+      } else {
+        recorder.start(1000);
+      }
       src.start();
     }).catch(err => finish(reject, err));
   });
