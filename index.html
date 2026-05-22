@@ -5819,7 +5819,9 @@ function dbToGain(db) {
   return Math.pow(10, getTrackVolumeDb({ volume: db }) / 20);
 }
 function dbToMidiVolume(db) {
-  return clampMidi(Math.round(dbToGain(db) * 100), 100);
+  // MIDI 내보내기에서도 쓰이는 전역 헬퍼라서 exportMidi 내부의 clampMidi에 의존하면 안 된다.
+  const v = Math.round(dbToGain(db) * 100);
+  return Math.max(0, Math.min(127, Number.isFinite(v) ? v : 100));
 }
 function updateVolLabel(v) {
   const db = getTrackVolumeDb({ volume: v });
