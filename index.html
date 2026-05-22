@@ -1255,6 +1255,40 @@
   }
 
 
+
+
+  /* ===== DB VOLUME SLIDER ZERO MARK / DESKTOP PREVIEW HEIGHT PATCH ===== */
+  .volume-slider-wrap {
+    position: relative;
+    width: 100%;
+    padding: 7px 0;
+  }
+  .volume-slider-wrap input[type=range] { display: block; }
+  .volume-zero-mark {
+    position: absolute;
+    left: 84.25%; /* (-36 dB ~ +6 dB)에서 0 dB 위치 */
+    top: 2px;
+    bottom: 2px;
+    width: 2px;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.72);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.18);
+    pointer-events: none;
+    z-index: 1;
+  }
+  html.theme-aero .volume-zero-mark {
+    background: rgba(18,48,74,0.52);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.70), 0 0 8px rgba(255,255,255,0.55);
+  }
+
+  @media (pointer: fine) and (orientation: portrait) {
+    body:not(.landscape-layout) { --track-h: 76px; }
+    body:not(.landscape-layout) .track-right { min-height: 62px; }
+    body:not(.landscape-layout) .track-preview-canvas { min-height: 50px; }
+  }
+
+
   /* ===== TYPEWRITER / COLD WAR MUSIC LAB THEME ===== */
   html.theme-typewriter {
     --bg: #cfc2a4;
@@ -2781,6 +2815,23 @@
 </div>
 </div>
 <div class="settings-group">
+<div class="settings-label">Pan</div>
+<div class="slider-row">
+<div class="slider-top"><span>L</span><span id="panVal">Center (64)</span><span>R</span></div>
+<input id="panSlider" max="127" min="0" type="range" value="64"/>
+</div>
+</div>
+<div class="settings-group">
+<div class="settings-label">Volume</div>
+<div class="slider-row">
+<div class="slider-top"><span>-36 dB</span><span id="volVal">0 dB</span><span>+6 dB</span></div>
+<div class="volume-slider-wrap">
+<input id="volSlider" max="6" min="-36" step="1" type="range" value="0"/>
+<span aria-hidden="true" class="volume-zero-mark"></span>
+</div>
+</div>
+</div>
+<div class="settings-group">
 <div class="ex-style-012">
 <div class="settings-label ex-style-013">Synth</div>
 <button class="ex-style-014" id="randomSynthBtn">🎲 랜덤</button>
@@ -2911,20 +2962,6 @@
 <input class="adsr-slider" id="adsrR" max="4" min="0" step="0.01" type="range" value="0.2"/>
 <div class="adsr-val" contenteditable="true" id="adsrRVal" inputmode="decimal">200ms</div>
 </div>
-</div>
-</div>
-<div class="settings-group">
-<div class="settings-label">Pan</div>
-<div class="slider-row">
-<div class="slider-top"><span>L</span><span id="panVal">Center (64)</span><span>R</span></div>
-<input id="panSlider" max="127" min="0" type="range" value="64"/>
-</div>
-</div>
-<div class="settings-group">
-<div class="settings-label">Volume</div>
-<div class="slider-row">
-<div class="slider-top"><span>0</span><span id="volVal">100%</span><span>127</span></div>
-<input id="volSlider" max="100" min="0" type="range" value="100"/>
 </div>
 </div>
 <div class="settings-group">
@@ -3854,7 +3891,7 @@ function previewNote(pitch, durationBeats) {
   if (ctx.state === 'suspended') ctx.resume();
   const env = ctx.createGain();
   const now = ctx.currentTime;
-  const vol = (track.volume || 100) / 100;
+  const vol = dbToGain(getTrackVolumeDb(track));
 
   // 트랙 ADSR 반영
   const atk = Math.max(0.001, track.adsr ? track.adsr.a : 0.01);
@@ -4186,7 +4223,7 @@ function scheduleNote(ctx2, track, note, bps) {
   const dcy = Math.max(0.001, track.adsr ? track.adsr.d : 0.1);
   const sus = track.adsr ? track.adsr.s : 0.7;
   const rel = Math.max(0.001, track.adsr ? track.adsr.r : 0.2);
-  const vol = (track.volume || 100) / 100;
+  const vol = dbToGain(getTrackVolumeDb(track));
   const panVal = ((track.pan || 64) - 64) / 63;
 
   panNode.pan.value = panVal;
@@ -5314,7 +5351,7 @@ document.getElementById('addTrackBtn').addEventListener('click', () => {
     lfo: { target: 'none', rate: 4, depth: 50, wave: 'sine' },
     adsr: {a: 0.01, d: 0.1, s: 0.7, r: 0.2},
     pan: 64,
-    volume: 100,
+    volume: 0,
     muted: false,
     solo: false,
     notes: []
@@ -5590,7 +5627,7 @@ document.getElementById('samplerPreviewBtn').addEventListener('click', () => {
   const root = track.samplerRoot || 60;
   const env = ctx.createGain();
   const now = ctx.currentTime;
-  const vol = (track.volume || 100) / 100;
+  const vol = dbToGain(getTrackVolumeDb(track));
   env.gain.setValueAtTime(vol * 0.6, now);
   env.gain.linearRampToValueAtTime(0, now + 1.5);
   env.connect(getMasterDest(ctx));
@@ -5666,8 +5703,8 @@ function openSettings(i) {
   document.getElementById('adsrR').value = adsr.r;
   document.getElementById('panSlider').value = track.pan;
   updatePanLabel(track.pan);
-  document.getElementById('volSlider').value = track.volume;
-  updateVolLabel(track.volume);
+  document.getElementById('volSlider').value = getTrackVolumeDb(track);
+  updateVolLabel(getTrackVolumeDb(track));
   document.getElementById('muteBtn').className = 'toggle-btn' + (track.muted ? ' active' : '');
   document.getElementById('soloBtn').className = 'toggle-btn' + (track.solo ? ' active solo-active' : '');
   document.getElementById('ghostBtn').className = 'toggle-btn' + (track.ghost !== false ? ' active' : '');
@@ -5715,7 +5752,7 @@ function saveCurrentSettings() {
   scheduleAutoSave();
   const track = project.tracks[currentTrackIdx];
   track.pan = parseInt(document.getElementById('panSlider').value);
-  track.volume = parseInt(document.getElementById('volSlider').value);
+  track.volume = parseInt(document.getElementById('volSlider').value, 10);
   // ADSR은 updateAdsrDisplay에서 이미 즉시 반영되므로 여기서는 건드리지 않음
 }
 
@@ -5723,8 +5760,22 @@ function updatePanLabel(v) {
   const label = v == 64 ? 'Center (64)' : v < 64 ? `L ${64-v}` : `R ${v-64}`;
   document.getElementById('panVal').textContent = label;
 }
+function getTrackVolumeDb(track) {
+  const raw = Number(track && track.volume);
+  if (!Number.isFinite(raw)) return 0;
+  // 예전 저장본 호환: 기존 0~100% 볼륨값은 dB로 변환한다.
+  if (raw > 6) return Math.max(-36, Math.min(6, Math.round(20 * Math.log10(Math.max(0.0001, raw / 100)))));
+  return Math.max(-36, Math.min(6, Math.round(raw)));
+}
+function dbToGain(db) {
+  return Math.pow(10, getTrackVolumeDb({ volume: db }) / 20);
+}
+function dbToMidiVolume(db) {
+  return clampMidi(Math.round(dbToGain(db) * 100), 100);
+}
 function updateVolLabel(v) {
-  document.getElementById('volVal').textContent = v + '%';
+  const db = getTrackVolumeDb({ volume: v });
+  document.getElementById('volVal').textContent = (db > 0 ? '+' : '') + db + ' dB';
 }
 
 document.getElementById('panSlider').addEventListener('input', e => {
@@ -7743,7 +7794,7 @@ function importMidi(buffer, sourceFileName = '') {
         harmonics: [1,0,0,0,0,0,0,0],
         adsr: {a:0.01, d:0.1, s:0.7, r:0.2},
         pan: 64,
-        volume: 100,
+        volume: 0,
         muted: false,
         solo: false,
         notes: trackNotes
@@ -7915,7 +7966,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.0.1<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.0.11<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
     () => {}, '확인', ''
   );
 });
@@ -8155,7 +8206,7 @@ async function renderTrackToBuffer(track, offlineCtx) {
     const dcy = Math.max(0.001, track.adsr ? track.adsr.d : 0.1);
     const sus = track.adsr ? track.adsr.s : 0.7;
     const rel = Math.max(0.001, track.adsr ? track.adsr.r : 0.2);
-    const vol = (track.volume || 100) / 100;
+    const vol = dbToGain(getTrackVolumeDb(track));
     const panVal = ((track.pan || 64) - 64) / 63;
 
     const env = offlineCtx.createGain();
@@ -8660,7 +8711,7 @@ function exportMidi(programs) {
       // Program change
       0x00, 0xc0|ch, clampMidi(programs && programs[i] !== undefined ? programs[i] : 0, 0),
       // Volume
-      0x00, 0xb0|ch, 0x07, clampMidi(track.volume, 100),
+      0x00, 0xb0|ch, 0x07, dbToMidiVolume(getTrackVolumeDb(track)),
       // Pan
       0x00, 0xb0|ch, 0x0a, clampMidi(track.pan, 64),
     ];
