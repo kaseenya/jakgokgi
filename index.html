@@ -228,7 +228,7 @@
   .settings-label { font-size: 10px; color: var(--text3); letter-spacing: 1px; margin-bottom: 8px; text-transform: uppercase; }
 
   /* Wavetable editor */
-  .wt-3d-canvas { display:block; width:100%; border-radius:8px; background:#080810; }
+  .wt-3d-canvas { display:block; width:100%; min-height:96px; height:96px; border-radius:8px; background:#080810; }
   .wt-slot-wrap { display:flex; gap:8px; margin-bottom:8px; }
   .wt-slot { flex:1; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:8px; }
   .wt-slot.active-slot { border-color:var(--accent); }
@@ -1257,29 +1257,73 @@
 
 
 
-  /* ===== DB VOLUME SLIDER ZERO MARK / DESKTOP PREVIEW HEIGHT PATCH ===== */
+  /* ===== SLIDER TICKS / DESKTOP PREVIEW HEIGHT PATCH ===== */
+  .meter-slider-wrap,
   .volume-slider-wrap {
+    --slider-thumb-size: 18px;
+    --tick-color: rgba(245,245,245,0.72);
+    --major-tick-color: rgba(255,255,255,0.98);
     position: relative;
     width: 100%;
-    padding: 7px 0;
+    padding: 7px 0 18px;
   }
-  .volume-slider-wrap input[type=range] { display: block; }
-  .volume-zero-mark {
+  .meter-slider-wrap input[type=range],
+  .volume-slider-wrap input[type=range] {
+    position: relative;
+    display: block;
+    z-index: 2;
+  }
+  .meter-slider-wrap::before,
+  .volume-slider-wrap::before {
+    content: "";
     position: absolute;
-    left: 84.25%; /* (-36 dB ~ +6 dB)에서 0 dB 위치 */
-    top: 2px;
-    bottom: 2px;
+    left: calc(var(--slider-thumb-size) / 2);
+    right: calc(var(--slider-thumb-size) / 2);
+    bottom: 4px;
+    height: 9px;
+    pointer-events: none;
+    opacity: 0.65;
+    background-image: linear-gradient(to right, var(--tick-color) 0 1px, transparent 1px 100%);
+    background-repeat: repeat-x;
+    background-position: left bottom;
+  }
+  /* pan: 0~127. 너무 촘촘하지 않게 약 16단위 눈금 */
+  .pan-slider-wrap::before {
+    background-size: calc(100% / 8) 100%;
+  }
+  /* volume: -36~+6. 6 dB 간격 눈금 */
+  .volume-slider-wrap::before {
+    background-size: calc(100% / 7) 100%;
+  }
+  .meter-slider-wrap::after,
+  .volume-slider-wrap::after {
+    content: "";
+    position: absolute;
+    bottom: 1px;
     width: 2px;
+    height: 20px;
     transform: translateX(-50%);
     border-radius: 999px;
-    background: rgba(255,255,255,0.72);
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.18);
+    background: var(--major-tick-color);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.28), 0 0 5px rgba(255,255,255,0.45);
     pointer-events: none;
     z-index: 1;
   }
-  html.theme-aero .volume-zero-mark {
-    background: rgba(18,48,74,0.52);
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.70), 0 0 8px rgba(255,255,255,0.55);
+  .pan-slider-wrap::after {
+    left: calc((var(--slider-thumb-size) / 2) + (100% - var(--slider-thumb-size)) * (64 / 127));
+  }
+  .volume-slider-wrap::after {
+    left: calc((var(--slider-thumb-size) / 2) + (100% - var(--slider-thumb-size)) * (36 / 42));
+  }
+  html.theme-aero .meter-slider-wrap,
+  html.theme-aero .volume-slider-wrap {
+    --slider-thumb-size: 22px;
+    --tick-color: rgba(245,245,245,0.72);
+    --major-tick-color: rgba(255,255,255,0.98);
+  }
+  html.theme-aero .meter-slider-wrap::after,
+  html.theme-aero .volume-slider-wrap::after {
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.20), 0 0 8px rgba(255,255,255,0.55);
   }
 
   @media (pointer: fine) and (orientation: portrait) {
@@ -2818,7 +2862,9 @@
 <div class="settings-label">Pan</div>
 <div class="slider-row">
 <div class="slider-top"><span>L</span><span id="panVal">Center (64)</span><span>R</span></div>
+<div class="meter-slider-wrap pan-slider-wrap">
 <input id="panSlider" max="127" min="0" type="range" value="64"/>
+</div>
 </div>
 </div>
 <div class="settings-group">
@@ -2827,7 +2873,6 @@
 <div class="slider-top"><span>-36 dB</span><span id="volVal">0 dB</span><span>+6 dB</span></div>
 <div class="volume-slider-wrap">
 <input id="volSlider" max="6" min="-36" step="1" type="range" value="0"/>
-<span aria-hidden="true" class="volume-zero-mark"></span>
 </div>
 </div>
 </div>
@@ -2837,7 +2882,7 @@
 <button class="ex-style-014" id="randomSynthBtn">🎲 랜덤</button>
 </div>
 <!-- 3D 미리보기 -->
-<canvas class="wt-3d-canvas ex-style-015" height="90" id="wt3dCanvas"></canvas>
+<canvas class="wt-3d-canvas ex-style-015" height="96" id="wt3dCanvas"></canvas>
 <!-- 슬롯 A / B -->
 <div class="wt-slot-wrap">
 <div class="wt-slot" id="wtSlotA">
@@ -3389,8 +3434,9 @@ function drawWT3D(track) {
   const canvas = document.getElementById('wt3dCanvas');
   if (!canvas) return;
   const W = canvas.offsetWidth || 300;
+  const H = Math.max(96, Math.round(canvas.offsetHeight || canvas.height || 96));
   canvas.width = W;
-  const H = canvas.height;
+  canvas.height = H;
   const ctx2 = canvas.getContext('2d');
   ctx2.fillStyle = '#080810';
   ctx2.fillRect(0, 0, W, H);
@@ -7966,8 +8012,8 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.0.11<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
-    () => {}, '취소', ''
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.0.1<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
+    () => {}, '확인', ''
   );
 });
 
