@@ -4347,7 +4347,9 @@ function scheduleAhead() {
     if (hasSolo && !track.solo) return;
     (track.notes || []).forEach(note => {
       // 아직 스케줄 안 된 범위의 노트만
-      if (note.startBeat < scheduledUntilBeat - BEAT_EPS) return;
+      // scheduledUntilBeat 경계값을 다시 포함하면, 6초 선예약 경계에 걸린 노트가
+      // 다음 scheduleAhead() 호출 때 한 번 더 예약되어 특정 마디에서 볼륨이 커진다.
+      if (note.startBeat <= scheduledUntilBeat + BEAT_EPS) return;
       if (note.startBeat > scheduleUntilBeat + BEAT_EPS) return;
       if (note.startBeat + note.lenBeats < playbackStartBeat - BEAT_EPS) return;
       scheduleNote(ctx2, track, note, bps);
@@ -4397,7 +4399,7 @@ function resyncPlaybackAfterThrottle(reason = '') {
   playbackStartWallTime = performance.now();
   lastPlaybackTickWallTime = playbackStartWallTime;
   // 백그라운드에서 예약 간격이 비어버린 뒤 복귀할 때, 현재 위치부터 다시 예약한다.
-  scheduledUntilBeat = playbackStartBeat - BEAT_EPS;
+  scheduledUntilBeat = playbackStartBeat - BEAT_EPS * 2;
   scheduleAhead();
   updateMainProgressScroll();
   drawMainProgress();
@@ -4420,7 +4422,7 @@ function startPlayback(soloOnly = false) {
   lastPlaybackTickWallTime = playbackStartWallTime;
   isPlaying = true;
   activeOscs = [];
-  scheduledUntilBeat = playbackStartBeat - BEAT_EPS;
+  scheduledUntilBeat = playbackStartBeat - BEAT_EPS * 2;
 
   const bps = project.bpm / 60;
   let lastNoteBeat = 0;
@@ -4576,7 +4578,7 @@ function refreshLiveMuteSoloPlayback() {
   playbackStartTime = ctx.currentTime;
   playbackStartWallTime = performance.now();
   lastPlaybackTickWallTime = playbackStartWallTime;
-  scheduledUntilBeat = playbackStartBeat - BEAT_EPS;
+  scheduledUntilBeat = playbackStartBeat - BEAT_EPS * 2;
 
   if (masterGain) {
     const hasSolo = project.tracks.some(t => t && t.solo);
