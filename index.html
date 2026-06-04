@@ -4209,7 +4209,7 @@ function inputChordPadChord(rootPitch, type, exts) {
   prSnapshot();
   const snap = PR.snapValues[PR.snapIdx] || 0;
   const startBeat = snap > 0 ? Math.round(PR.playPos / snap) * snap : PR.playPos;
-  const lenBeats = snap > 0 ? Math.max(snap, 0.25) : 1;
+  const lenBeats = Math.max(1, project.timeNum || 4);
 
   // 코드 입력 후에는 바로 이동/길이조절이 가능하도록 선택 모드를 켠다.
   // 이미 선택 모드가 켜져 있으면 기존 선택은 유지하고, 새 코드만 추가 선택한다.
@@ -4992,7 +4992,7 @@ function savePRViewState() {
 
 function normalizeProjectAfterLoad() {
   if (!project || !Array.isArray(project.tracks)) return;
-  if (!THEME_CLASSES.includes(project.theme)) project.theme = localStorage.getItem(THEME_STORAGE_KEY) || 'theme-aero';
+  project.theme = getCurrentTheme();
   project.tracks.forEach(track => {
     if (!track) return;
     if (track.prView) {
@@ -5002,6 +5002,12 @@ function normalizeProjectAfterLoad() {
       track.prView.scrollY = Number(track.prView.scrollY);
     }
   });
+}
+
+function getProjectSaveData() {
+  const data = { ...project };
+  delete data.theme;
+  return data;
 }
 
 // ============================================================
@@ -7629,7 +7635,7 @@ document.getElementById('menuNew').addEventListener('click', () => {
 
 function saveProjectToJson() {
   savePRViewState();
-  const json = JSON.stringify(project, null, 2);
+  const json = JSON.stringify(getProjectSaveData(), null, 2);
   const blob = new Blob([json], {type:'application/json'});
   downloadBlob(blob, (project.name || '프로젝트') + '.json');
 }
@@ -7660,7 +7666,7 @@ document.getElementById('fileInput').addEventListener('change', e => {
       stopPlaybackAndRewindForLoad();
       project = loadedProject;
       normalizeProjectAfterLoad();
-      applyTheme(project.theme, { persist: true });
+      syncThemeButtons(getCurrentTheme());
       autoSaveEnabled = false;
       autoSaveFileHandle = null;
       PR.playPos = 0;
@@ -8016,7 +8022,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.0.1<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.0.2<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
     () => {}, '확인', ''
   );
 });
@@ -8025,7 +8031,7 @@ async function loadProjectFromObject(nextProject, { resetAutoSave = true } = {})
   stopPlaybackAndRewindForLoad();
   project = nextProject;
   normalizeProjectAfterLoad();
-  applyTheme(project.theme, { persist: true });
+  syncThemeButtons(getCurrentTheme());
   if (resetAutoSave) {
     autoSaveEnabled = false;
     autoSaveFileHandle = null;
@@ -9784,7 +9790,7 @@ async function autoSaveNow() {
   savePRViewState();
   try {
     const writable = await autoSaveFileHandle.createWritable();
-    await writable.write(JSON.stringify(project, null, 2));
+    await writable.write(JSON.stringify(getProjectSaveData(), null, 2));
     await writable.close();
     showAutoSaveIndicator();
   } catch(e) {
