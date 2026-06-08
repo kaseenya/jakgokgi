@@ -3037,6 +3037,7 @@
 <button class="pr-btn" id="selectBtn" title="선택 모드">SEL</button>
 <select class="pr-btn ex-style-045" id="snapBtn" title="스냅"></select>
 <button class="pr-btn del-btn" id="delBtn" title="선택 삭제">DEL</button>
+<button class="pr-btn" id="midiRecBtn" title="MIDI 녹음">REC</button>
 <button class="pr-btn play-btn" id="soloPlayBtn" title="구간 재생">SOLO</button>
 <button class="pr-btn play-btn" id="fullPlayBtn" title="전체 재생">PLAY</button>
 <button class="pr-btn ex-style-046" id="prRewindBtn" title="처음으로">⏮</button>
@@ -4250,6 +4251,44 @@ const PLAYBACK_START_DELAY = 0.10; // 첫 박자 노트가 AudioContext 재개/�
 const BEAT_EPS = 1e-6; // 0박/마디 경계 노트가 부동소수점 오차로 제외되는 것 방지
 let playbackSoloOnly = false;
 let playbackTotalBeat = 0;
+let midiAccess = null;
+let midiRecordEnabled = false;
+let midiRecordSnapshotTaken = false;
+const midiRecordingNotes = new Map();
+
+function shouldLoopPlayback() {
+  return loopEnabled;
+}
+
+function getProjectEndBeat() {
+  return Math.max(1, (project.bars || 1) * (project.timeNum || 4));
+}
+
+function extendProjectBarsForBeat(beat, force = false) {
+  if (!force && !midiRecordEnabled) return;
+  const beatsPerBar = Math.max(1, project.timeNum || 4);
+  const neededBars = Math.max(1, Math.ceil((Math.max(0, beat) + 0.001) / beatsPerBar));
+  if (neededBars > project.bars) {
+    project.bars = neededBars;
+    const barsInput = document.getElementById('barsInput');
+    if (barsInput) barsInput.value = project.bars;
+  }
+}
+
+function preserveBarsForExistingNotes() {
+  let maxBeat = 0;
+  project.tracks.forEach(track => {
+    (track.notes || []).forEach(n => {
+      maxBeat = Math.max(maxBeat, n.startBeat + n.lenBeats);
+    });
+  });
+  if (typeof PR !== 'undefined' && PR.notes) {
+    PR.notes.forEach(n => {
+      maxBeat = Math.max(maxBeat, n.startBeat + n.lenBeats);
+    });
+  }
+  if (maxBeat > 0) extendProjectBarsForBeat(maxBeat, true);
+}
 
 function scheduleNote(ctx2, track, note, bps) {
   const startDelay = (note.startBeat - playbackStartBeat) / bps;
@@ -4383,7 +4422,7 @@ function resyncPlaybackAfterThrottle(reason = '') {
   if (!Number.isFinite(beat) || Math.abs(wallBeat - beat) > bps * 0.75) beat = wallBeat;
 
   if (playbackTotalBeat > 0) {
-    if (loopEnabled) {
+    if (shouldLoopPlayback()) {
       beat = ((beat % playbackTotalBeat) + playbackTotalBeat) % playbackTotalBeat;
     } else if (beat >= playbackTotalBeat) {
       PR.playPos = playbackOriginBeat;
@@ -4432,9 +4471,9 @@ function startPlayback(soloOnly = false) {
       lastNoteBeat = Math.max(lastNoteBeat, n.startBeat + n.lenBeats);
     });
   });
-  if (lastNoteBeat === 0) return;
+  if (lastNoteBeat === 0 && !midiRecordEnabled) return;
   // 루프 모드일 때는 여유 없이 마지막 노트 끝에서 바로 반복
-  playbackTotalBeat = loopEnabled ? lastNoteBeat : lastNoteBeat + 1;
+  playbackTotalBeat = midiRecordEnabled ? Infinity : (loopEnabled ? lastNoteBeat : lastNoteBeat + 1);
 
   // 트랙 수에 따라 마스터 게인 자동 조절
   if (masterGain) {
@@ -4456,9 +4495,10 @@ function startPlayback(soloOnly = false) {
       return;
     }
     PR.playPos = getPlaybackBeatFromAudioClock();
+    extendProjectBarsForBeat(PR.playPos);
     if (PR.playPos >= playbackTotalBeat) {
       // 반복 모드면 맨 처음으로 돌아가 다시 재생 (이전 릴리즈 자연 소멸)
-      if (loopEnabled) {
+      if (shouldLoopPlayback()) {
         const soloWas = playbackSoloOnly;
         // 타이머만 멈추고 오실레이터는 건드리지 않음 → 릴리즈 꼬리 자연스럽게 남음
         if (playbackTimer) { clearInterval(playbackTimer); playbackTimer = null; }
@@ -4501,6 +4541,7 @@ function startPlayback(soloOnly = false) {
 
 function stopPlayback() {
   if (playbackTimer) { clearInterval(playbackTimer); playbackTimer = null; }
+  if (midiRecordEnabled && isPlaying) flushMidiRecordingNotes(getMidiRecordBeat());
   isPlaying = false;
   // 스케줄된 오실레이터 즉시 정지
   const now = audioCtx ? audioCtx.currentTime : 0;
@@ -4567,7 +4608,7 @@ function refreshLiveMuteSoloPlayback() {
   let beat = playbackStartBeat + Math.max(0, ctx.currentTime - playbackStartTime) * bps;
   if (!Number.isFinite(beat)) beat = PR.playPos || playbackStartBeat || 0;
 
-  if (playbackTotalBeat > 0 && loopEnabled) {
+  if (playbackTotalBeat > 0 && shouldLoopPlayback()) {
     beat = ((beat % playbackTotalBeat) + playbackTotalBeat) % playbackTotalBeat;
   }
 
@@ -6080,6 +6121,7 @@ function drawPRAndTimeline() {
 
 function drawPR() {
   if (!prCtx) return;
+  preserveBarsForExistingNotes();
   const W = prCanvas.width, H = prCanvas.height;
   const theme = getCanvasTheme();
   prCtx.clearRect(0, 0, W, H);
@@ -7359,6 +7401,124 @@ function savePRNotes() {
   }
 }
 
+function updateMidiRecButton() {
+  const btn = document.getElementById('midiRecBtn');
+  if (!btn) return;
+  btn.classList.toggle('active', midiRecordEnabled);
+  btn.textContent = midiRecordEnabled ? 'REC●' : 'REC';
+}
+
+function attachMidiInputs() {
+  if (!midiAccess) return 0;
+  let count = 0;
+  midiAccess.inputs.forEach(input => {
+    input.onmidimessage = handleMidiMessage;
+    count++;
+  });
+  return count;
+}
+
+async function ensureMidiAccess() {
+  if (!navigator.requestMIDIAccess) {
+    showPRToast('MIDI 지원 안 됨');
+    return false;
+  }
+  if (midiAccess) {
+    attachMidiInputs();
+    return true;
+  }
+  try {
+    midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+    midiAccess.onstatechange = () => {
+      const count = attachMidiInputs();
+      if (midiRecordEnabled) showPRToast(`MIDI ${count}개 연결`);
+    };
+    const count = attachMidiInputs();
+    showPRToast(count ? `MIDI ${count}개 연결` : 'MIDI 기기 없음');
+    return true;
+  } catch(e) {
+    showPRToast('MIDI 권한 실패');
+    return false;
+  }
+}
+
+function getMidiRecordBeat() {
+  let beat = isPlaying ? getPlaybackBeatFromAudioClock() : PR.playPos;
+  if (!Number.isFinite(beat)) beat = PR.playPos || 0;
+  extendProjectBarsForBeat(beat);
+  if (playbackTotalBeat > 0 && shouldLoopPlayback()) {
+    beat = ((beat % playbackTotalBeat) + playbackTotalBeat) % playbackTotalBeat;
+  }
+  return Math.max(0, beat);
+}
+
+function beginMidiRecordedNote(pitch) {
+  if (!midiRecordEnabled || !isPlaying || currentTrackIdx < 0) return;
+  if (midiRecordingNotes.has(pitch)) return;
+  if (!midiRecordSnapshotTaken) {
+    prSnapshot();
+    midiRecordSnapshotTaken = true;
+  }
+  midiRecordingNotes.set(pitch, getMidiRecordBeat());
+}
+
+function finishMidiRecordedNote(pitch) {
+  if (!midiRecordingNotes.has(pitch) || currentTrackIdx < 0) return;
+  const startBeat = midiRecordingNotes.get(pitch);
+  midiRecordingNotes.delete(pitch);
+  let endBeat = getMidiRecordBeat();
+  let lenBeats = endBeat - startBeat;
+  if (lenBeats <= 0 && Number.isFinite(playbackTotalBeat) && shouldLoopPlayback()) lenBeats += playbackTotalBeat;
+  lenBeats = Math.max(0.0625, lenBeats);
+  if (Number.isFinite(playbackTotalBeat) && playbackTotalBeat > 0 && shouldLoopPlayback()) {
+    lenBeats = Math.min(lenBeats, Math.max(0.0625, playbackTotalBeat - startBeat));
+  }
+  PR.notes.push({ pitch, startBeat, lenBeats, selected: false });
+  savePRNotes();
+  drawPRAndTimeline();
+}
+
+function flushMidiRecordingNotes(endBeat = PR.playPos) {
+  if (!midiRecordingNotes.size) return;
+  const savedPlayPos = PR.playPos;
+  PR.playPos = Number.isFinite(endBeat) ? endBeat : savedPlayPos;
+  Array.from(midiRecordingNotes.keys()).forEach(finishMidiRecordedNote);
+  PR.playPos = savedPlayPos;
+  midiRecordSnapshotTaken = false;
+}
+
+function handleMidiMessage(event) {
+  const [status, data1, data2] = event.data || [];
+  const command = status & 0xf0;
+  const pitch = data1;
+  if (command === 0x90 && data2 > 0) {
+    previewNote(pitch, 0.25);
+    beginMidiRecordedNote(pitch);
+  } else if (command === 0x80 || (command === 0x90 && data2 === 0)) {
+    finishMidiRecordedNote(pitch);
+  }
+}
+
+document.getElementById('midiRecBtn').addEventListener('click', async () => {
+  if (!midiRecordEnabled) {
+    if (currentTrackIdx < 0) {
+      showPRToast('트랙을 먼저 선택');
+      return;
+    }
+    const ok = await ensureMidiAccess();
+    if (!ok) return;
+    midiRecordEnabled = true;
+    midiRecordSnapshotTaken = false;
+    if (isPlaying) playbackTotalBeat = Infinity;
+  } else {
+    flushMidiRecordingNotes(PR.playPos);
+    midiRecordEnabled = false;
+    midiRecordSnapshotTaken = false;
+    if (isPlaying && !loopEnabled) playbackTotalBeat = getProjectEndBeat();
+  }
+  updateMidiRecButton();
+});
+
 document.getElementById('soloPlayBtn').addEventListener('click', () => {
   if (isPlaying) {
     stopPlayback();
@@ -8022,7 +8182,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.0.2<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.1.0<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
     () => {}, '확인', ''
   );
 });
