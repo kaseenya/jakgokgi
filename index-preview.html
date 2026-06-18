@@ -7546,6 +7546,26 @@ function onBluetoothMidiDisconnected() {
   showConfirm('블루투스 MIDI 연결이 끊어졌어요.', () => {}, '확인', '');
 }
 
+async function disconnectBluetoothMidiDevice({ notify = true } = {}) {
+  const device = bluetoothMidiDevice;
+  const characteristic = bluetoothMidiCharacteristic;
+  try {
+    if (characteristic) {
+      characteristic.removeEventListener('characteristicvaluechanged', handleBluetoothMidiValue);
+      try { await characteristic.stopNotifications(); } catch(e) {}
+    }
+    if (device) {
+      device.removeEventListener('gattserverdisconnected', onBluetoothMidiDisconnected);
+      if (device.gatt && device.gatt.connected) device.gatt.disconnect();
+    }
+  } finally {
+    bluetoothMidiDevice = null;
+    bluetoothMidiCharacteristic = null;
+    updateBluetoothMidiMenuLabel('');
+    if (notify) showConfirm('블루투스 MIDI 연결을 끊었어요.', () => {}, '확인', '');
+  }
+}
+
 async function connectBluetoothMidiDevice() {
   if (!navigator.bluetooth) {
     showConfirm('이 브라우저는 블루투스 MIDI 인식을 지원하지 않아요.\nChrome 또는 Edge에서 HTTPS로 열어주세요.', () => {}, '확인', '');
@@ -7572,6 +7592,13 @@ async function connectBluetoothMidiDevice() {
 
 document.getElementById('menuBluetoothMidi').addEventListener('click', () => {
   closeMenu();
+  if (bluetoothMidiDevice && bluetoothMidiDevice.gatt && bluetoothMidiDevice.gatt.connected) {
+    const name = bluetoothMidiDevice.name || '이름 없는 기기';
+    showConfirm(`블루투스 MIDI 연결을 끊을까요?\n${name}`, () => {
+      disconnectBluetoothMidiDevice();
+    }, '끊기', '취소');
+    return;
+  }
   connectBluetoothMidiDevice();
 });
 
