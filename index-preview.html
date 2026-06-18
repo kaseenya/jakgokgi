@@ -7539,6 +7539,11 @@ function updateBluetoothMidiMenuLabel(name) {
   item.textContent = name ? `🛜 블루투스 MIDI: ${name}` : '🛜 블루투스 MIDI 인식';
 }
 
+function setBluetoothMidiMenuBusy() {
+  const item = document.getElementById('menuBluetoothMidi');
+  if (item) item.textContent = '🛜 페어링 작업중...';
+}
+
 function onBluetoothMidiDisconnected() {
   bluetoothMidiDevice = null;
   bluetoothMidiCharacteristic = null;
@@ -7549,6 +7554,7 @@ function onBluetoothMidiDisconnected() {
 async function disconnectBluetoothMidiDevice({ notify = true } = {}) {
   const device = bluetoothMidiDevice;
   const characteristic = bluetoothMidiCharacteristic;
+  setBluetoothMidiMenuBusy();
   try {
     if (characteristic) {
       characteristic.removeEventListener('characteristicvaluechanged', handleBluetoothMidiValue);
@@ -7571,6 +7577,7 @@ async function connectBluetoothMidiDevice() {
     showConfirm('이 브라우저는 블루투스 MIDI 인식을 지원하지 않아요.\nChrome 또는 Edge에서 HTTPS로 열어주세요.', () => {}, '확인', '');
     return;
   }
+  setBluetoothMidiMenuBusy();
   try {
     const device = await navigator.bluetooth.requestDevice({
       filters: [{ services: [BLE_MIDI_SERVICE_UUID] }]
@@ -7585,6 +7592,7 @@ async function connectBluetoothMidiDevice() {
     updateBluetoothMidiMenuLabel(device.name || '이름 없는 기기');
     showConfirm(`블루투스 MIDI 연결됨\n${device.name || '이름 없는 기기'}`, () => {}, '확인', '');
   } catch(e) {
+    updateBluetoothMidiMenuLabel('');
     if (e && e.name === 'NotFoundError') return;
     showConfirm('블루투스 MIDI 기기를 인식하지 못했어요.\nOS에서 페어링되어 있는지, BLE MIDI를 지원하는 기기인지 확인해주세요.', () => {}, '확인', '');
   }
