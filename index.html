@@ -3186,7 +3186,7 @@
 <div class="menu-item" id="menuSave">💾 저장</div>
 <div class="menu-item" id="menuOpen">📂 열기</div>
 <div class="menu-item" id="menuImportMidi">🎹 MIDI 불러오기</div>
-<div class="menu-item" id="menuBluetoothMidi">🛜 블루투스 MIDI 인식</div>
+<div class="menu-item" id="menuBluetoothMidi">🛜 블루투스 MIDI 장치 페어링</div>
 <div class="menu-item" id="menuExportSimple">🎵 MIDI 내보내기 (피아노)</div>
 <div class="menu-item" id="menuExportCustom">🎹 MIDI 내보내기 (악기 선택)</div>
 <div class="menu-item" id="menuExportAudio">🎵 오디오 내보내기</div>
@@ -7560,7 +7560,7 @@ function handleBluetoothMidiValue(event) {
 function updateBluetoothMidiMenuLabel(name) {
   const item = document.getElementById('menuBluetoothMidi');
   if (!item) return;
-  item.textContent = name ? `🛜 블루투스 MIDI: ${name}` : '🛜 블루투스 MIDI 인식';
+  item.textContent = name ? `🛜 블루투스 MIDI: ${name}` : '🛜 블루투스 MIDI 장치 페어링';
 }
 
 function setBluetoothMidiMenuBusy() {
@@ -7598,7 +7598,7 @@ async function disconnectBluetoothMidiDevice({ notify = true } = {}) {
 
 async function connectBluetoothMidiDevice() {
   if (!navigator.bluetooth) {
-    showConfirm('이 브라우저는 블루투스 MIDI 인식을 지원하지 않아요.\nChrome 또는 Edge에서 HTTPS로 열어주세요.', () => {}, '확인', '');
+    showConfirm('이 브라우저는 블루투스 MIDI 장치 페어링을 지원하지 않아요.\nChrome 또는 Edge에서 HTTPS로 열어주세요.', () => {}, '확인', '');
     return;
   }
   setBluetoothMidiMenuBusy();
