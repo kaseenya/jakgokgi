@@ -4260,6 +4260,9 @@ let bluetoothMidiDevice = null;
 let bluetoothMidiCharacteristic = null;
 const BLE_MIDI_SERVICE_UUID = '03b80e5a-ede8-4b33-a751-6ce34ec4c700';
 const BLE_MIDI_CHARACTERISTIC_UUID = '7772e5db-3868-4112-a1a9-f2669d106bf3';
+const MIDI_MAX_NOTE_MS = 30000;
+const MIDI_MIN_NOTE_ON_INTERVAL_MS = 0.1;
+let lastMidiNoteOnAt = 0;
 
 function shouldLoopPlayback() {
   return loopEnabled;
@@ -7464,13 +7467,18 @@ function beginMidiRecordedNote(pitch) {
     prSnapshot();
     midiRecordSnapshotTaken = true;
   }
-  midiRecordingNotes.set(pitch, getMidiRecordBeat());
+  midiRecordingNotes.set(pitch, {
+    startBeat: getMidiRecordBeat(),
+    startMs: performance.now()
+  });
 }
 
 function finishMidiRecordedNote(pitch) {
   if (!midiRecordingNotes.has(pitch) || currentTrackIdx < 0) return;
-  const startBeat = midiRecordingNotes.get(pitch);
+  const rec = midiRecordingNotes.get(pitch);
   midiRecordingNotes.delete(pitch);
+  if (performance.now() - rec.startMs > MIDI_MAX_NOTE_MS) return;
+  const startBeat = rec.startBeat;
   let endBeat = getMidiRecordBeat();
   let lenBeats = endBeat - startBeat;
   if (lenBeats <= 0 && Number.isFinite(playbackTotalBeat) && shouldLoopPlayback()) lenBeats += playbackTotalBeat;
@@ -7497,6 +7505,9 @@ function handleMidiMessage(event) {
   const command = status & 0xf0;
   const pitch = data1;
   if (command === 0x90 && data2 > 0) {
+    const now = performance.now();
+    if (now - lastMidiNoteOnAt < MIDI_MIN_NOTE_ON_INTERVAL_MS) return;
+    lastMidiNoteOnAt = now;
     previewNote(pitch, 0.25);
     beginMidiRecordedNote(pitch);
   } else if (command === 0x80 || (command === 0x90 && data2 === 0)) {
@@ -7522,9 +7533,16 @@ function handleBluetoothMidiValue(event) {
   }
 }
 
+function updateBluetoothMidiMenuLabel(name) {
+  const item = document.getElementById('menuBluetoothMidi');
+  if (!item) return;
+  item.textContent = name ? `🛜 블루투스 MIDI: ${name}` : '🛜 블루투스 MIDI 인식';
+}
+
 function onBluetoothMidiDisconnected() {
   bluetoothMidiDevice = null;
   bluetoothMidiCharacteristic = null;
+  updateBluetoothMidiMenuLabel('');
   showConfirm('블루투스 MIDI 연결이 끊어졌어요.', () => {}, '확인', '');
 }
 
@@ -7535,8 +7553,7 @@ async function connectBluetoothMidiDevice() {
   }
   try {
     const device = await navigator.bluetooth.requestDevice({
-      acceptAllDevices: true,
-      optionalServices: [BLE_MIDI_SERVICE_UUID]
+      filters: [{ services: [BLE_MIDI_SERVICE_UUID] }]
     });
     bluetoothMidiDevice = device;
     device.addEventListener('gattserverdisconnected', onBluetoothMidiDisconnected);
@@ -7545,6 +7562,7 @@ async function connectBluetoothMidiDevice() {
     bluetoothMidiCharacteristic = await service.getCharacteristic(BLE_MIDI_CHARACTERISTIC_UUID);
     await bluetoothMidiCharacteristic.startNotifications();
     bluetoothMidiCharacteristic.addEventListener('characteristicvaluechanged', handleBluetoothMidiValue);
+    updateBluetoothMidiMenuLabel(device.name || '이름 없는 기기');
     showConfirm(`블루투스 MIDI 연결됨\n${device.name || '이름 없는 기기'}`, () => {}, '확인', '');
   } catch(e) {
     if (e && e.name === 'NotFoundError') return;
