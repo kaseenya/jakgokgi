@@ -5039,11 +5039,35 @@ function savePRViewState() {
   };
 }
 
+// HTML 특수문자 이스케이프 (innerHTML 주입 방지)
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// CSS 색상 값 검증 (#rgb/#rrggbb/#rrggbbaa 또는 rgb()/rgba() 형태만 허용)
+function safeColor(c, fallback) {
+  fallback = fallback || '#c084fc';
+  if (typeof c !== 'string') return fallback;
+  const v = c.trim();
+  if (/^#[0-9a-fA-F]{3,8}$/.test(v)) return v;
+  if (/^rgba?\(\s*[\d.\s,%/]+\)$/.test(v)) return v;
+  return fallback;
+}
+
 function normalizeProjectAfterLoad() {
   if (!project || !Array.isArray(project.tracks)) return;
   project.theme = getCurrentTheme();
+  if (project.name != null) project.name = String(project.name);
   project.tracks.forEach(track => {
     if (!track) return;
+    // 임포트된 파일의 임의 문자열을 안전하게 정규화
+    if (track.name != null) track.name = String(track.name);
+    if (track.color != null) track.color = safeColor(track.color);
     if (track.prView) {
       track.prView.cellH = Number(track.prView.cellH);
       track.prView.beatW = Number(track.prView.beatW);
@@ -5263,17 +5287,17 @@ function renderTrackList() {
 
     const left = document.createElement('div');
     left.className = 'track-left';
-    const color = track.color || '#c084fc';
+    const color = safeColor(track.color, '#c084fc');
     const metaText = `Ch.${i+1} · ${track.waveType === 'wavetable' ? (track.wtTypeA||'SINE').toUpperCase()+'⟷'+(track.wtTypeB||'SQR').toUpperCase() + (track.noiseMix > 0 ? '+🌫️' : '') : track.waveType === 'noise' ? '🌫️NOISE' : (track.waveType||'WT').toUpperCase()}${track.muted?' · MUTE':''}${track.solo?' · SOLO':''}`;
     left.innerHTML = `
       <div class="track-left-row track-left-row-name">
         <button class="track-ms-btn track-mute-btn${track.muted ? ' active' : ''}" data-idx="${i}" title="뮤트">M</button>
         <div class="track-color-dot" data-idx="${i}" style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;cursor:pointer;"></div>
-        <div class="track-name" data-idx="${i}" title="더블탭으로 이름 편집">${track.name || track.color || '#000000'}</div>
+        <div class="track-name" data-idx="${i}" title="더블탭으로 이름 편집">${escapeHtml(track.name || track.color || '#000000')}</div>
       </div>
       <div class="track-left-row track-left-row-meta">
         <button class="track-ms-btn track-solo-btn${track.solo ? ' solo-active' : ''}" data-idx="${i}" title="솔로">S</button>
-        <div class="track-meta">${metaText}</div>
+        <div class="track-meta">${escapeHtml(metaText)}</div>
       </div>
     `;
     left.addEventListener('click', e => {
@@ -7590,7 +7614,7 @@ async function connectBluetoothMidiDevice() {
     await bluetoothMidiCharacteristic.startNotifications();
     bluetoothMidiCharacteristic.addEventListener('characteristicvaluechanged', handleBluetoothMidiValue);
     updateBluetoothMidiMenuLabel(device.name || '이름 없는 기기');
-    showConfirm(`블루투스 MIDI 연결됨\n${device.name || '이름 없는 기기'}`, () => {}, '확인', '');
+    showConfirm(`블루투스 MIDI 연결됨\n${escapeHtml(device.name || '이름 없는 기기')}`, () => {}, '확인', '');
   } catch(e) {
     updateBluetoothMidiMenuLabel('');
     if (e && e.name === 'NotFoundError') return;
@@ -7601,7 +7625,7 @@ async function connectBluetoothMidiDevice() {
 document.getElementById('menuBluetoothMidi').addEventListener('click', () => {
   closeMenu();
   if (bluetoothMidiDevice && bluetoothMidiDevice.gatt && bluetoothMidiDevice.gatt.connected) {
-    const name = bluetoothMidiDevice.name || '이름 없는 기기';
+    const name = escapeHtml(bluetoothMidiDevice.name || '이름 없는 기기');
     showConfirm(`블루투스 MIDI 연결을 끊을까요?\n${name}`, () => {
       disconnectBluetoothMidiDevice();
     }, '끊기', '취소');
@@ -7948,7 +7972,7 @@ document.getElementById('fileInput').addEventListener('change', e => {
       // 이전에 자동저장 파일이 있었으면 재연결 안내
       if (project._autoSaveFileName && window.showSaveFilePicker) {
         showConfirm(
-          `이 프로젝트는 "${project._autoSaveFileName}"에 자동저장되었어요.
+          `이 프로젝트는 "${escapeHtml(project._autoSaveFileName)}"에 자동저장되었어요.
 같은 파일로 계속 자동저장할까요?`,
           async () => {
             try {
@@ -8130,9 +8154,9 @@ function importMidi(buffer, sourceFileName = '') {
 
     renderTrackList();
     updateBpmDisplay();
-    showConfirm(`MIDI 불러오기 완료!\n${project.name}\n트랙 ${project.tracks.length}개  ·  ${bpm} BPM`, () => {}, '확인', '');
+    showConfirm(`MIDI 불러오기 완료!\n${escapeHtml(project.name)}\n트랙 ${project.tracks.length}개  ·  ${bpm} BPM`, () => {}, '확인', '');
   } catch(e) {
-    showConfirm('MIDI 파일을 읽을 수 없어요:\n' + e.message, () => {}, '확인', '');
+    showConfirm('MIDI 파일을 읽을 수 없어요:\n' + escapeHtml(e.message), () => {}, '확인', '');
   }
 }
 
@@ -8209,7 +8233,7 @@ document.getElementById('menuExportCustom').addEventListener('click', () => {
     const row = document.createElement('div');
     row.style.cssText = 'background:var(--bg3);border-radius:8px;padding:12px;border:1px solid var(--border);';
     row.innerHTML = `
-      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;">Ch.${i+1} · ${(track.waveType||'sine').toUpperCase()}</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;">Ch.${i+1} · ${escapeHtml((track.waveType||'sine').toUpperCase())}</div>
       <select data-idx="${i}" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px;font-family:'Consolas, D2Coding, monospace',monospace;font-size:11px;outline:none;">
         <option value="0">로딩 중...</option>
       </select>
