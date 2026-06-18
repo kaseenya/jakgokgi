@@ -3186,6 +3186,7 @@
 <div class="menu-item" id="menuSave">💾 저장</div>
 <div class="menu-item" id="menuOpen">📂 열기</div>
 <div class="menu-item" id="menuImportMidi">🎹 MIDI 불러오기</div>
+<div class="menu-item" id="menuBluetoothMidi">🛜 블루투스 MIDI 인식</div>
 <div class="menu-item" id="menuExportSimple">🎵 MIDI 내보내기 (피아노)</div>
 <div class="menu-item" id="menuExportCustom">🎹 MIDI 내보내기 (악기 선택)</div>
 <div class="menu-item" id="menuExportAudio">🎵 오디오 내보내기</div>
@@ -4255,6 +4256,13 @@ let midiAccess = null;
 let midiRecordEnabled = false;
 let midiRecordSnapshotTaken = false;
 const midiRecordingNotes = new Map();
+let bluetoothMidiDevice = null;
+let bluetoothMidiCharacteristic = null;
+const BLE_MIDI_SERVICE_UUID = '03b80e5a-ede8-4b33-a751-6ce34ec4c700';
+const BLE_MIDI_CHARACTERISTIC_UUID = '7772e5db-3868-4112-a1a9-f2669d106bf3';
+const MIDI_MAX_NOTE_MS = 30000;
+const MIDI_MIN_NOTE_ON_INTERVAL_MS = 0.1;
+let lastMidiNoteOnAt = 0;
 
 function shouldLoopPlayback() {
   return loopEnabled;
@@ -5031,11 +5039,35 @@ function savePRViewState() {
   };
 }
 
+// HTML 특수문자 이스케이프 (innerHTML 주입 방지)
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// CSS 색상 값 검증 (#rgb/#rrggbb/#rrggbbaa 또는 rgb()/rgba() 형태만 허용)
+function safeColor(c, fallback) {
+  fallback = fallback || '#c084fc';
+  if (typeof c !== 'string') return fallback;
+  const v = c.trim();
+  if (/^#[0-9a-fA-F]{3,8}$/.test(v)) return v;
+  if (/^rgba?\(\s*[\d.\s,%/]+\)$/.test(v)) return v;
+  return fallback;
+}
+
 function normalizeProjectAfterLoad() {
   if (!project || !Array.isArray(project.tracks)) return;
   project.theme = getCurrentTheme();
+  if (project.name != null) project.name = String(project.name);
   project.tracks.forEach(track => {
     if (!track) return;
+    // 임포트된 파일의 임의 문자열을 안전하게 정규화
+    if (track.name != null) track.name = String(track.name);
+    if (track.color != null) track.color = safeColor(track.color);
     if (track.prView) {
       track.prView.cellH = Number(track.prView.cellH);
       track.prView.beatW = Number(track.prView.beatW);
@@ -5255,17 +5287,17 @@ function renderTrackList() {
 
     const left = document.createElement('div');
     left.className = 'track-left';
-    const color = track.color || '#c084fc';
+    const color = safeColor(track.color, '#c084fc');
     const metaText = `Ch.${i+1} · ${track.waveType === 'wavetable' ? (track.wtTypeA||'SINE').toUpperCase()+'⟷'+(track.wtTypeB||'SQR').toUpperCase() + (track.noiseMix > 0 ? '+🌫️' : '') : track.waveType === 'noise' ? '🌫️NOISE' : (track.waveType||'WT').toUpperCase()}${track.muted?' · MUTE':''}${track.solo?' · SOLO':''}`;
     left.innerHTML = `
       <div class="track-left-row track-left-row-name">
         <button class="track-ms-btn track-mute-btn${track.muted ? ' active' : ''}" data-idx="${i}" title="뮤트">M</button>
         <div class="track-color-dot" data-idx="${i}" style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;cursor:pointer;"></div>
-        <div class="track-name" data-idx="${i}" title="더블탭으로 이름 편집">${track.name || track.color || '#000000'}</div>
+        <div class="track-name" data-idx="${i}" title="더블탭으로 이름 편집">${escapeHtml(track.name || track.color || '#000000')}</div>
       </div>
       <div class="track-left-row track-left-row-meta">
         <button class="track-ms-btn track-solo-btn${track.solo ? ' solo-active' : ''}" data-idx="${i}" title="솔로">S</button>
-        <div class="track-meta">${metaText}</div>
+        <div class="track-meta">${escapeHtml(metaText)}</div>
       </div>
     `;
     left.addEventListener('click', e => {
@@ -5438,7 +5470,7 @@ document.getElementById('addTrackBtn').addEventListener('click', () => {
     waveType: 'wavetable',
     wtTypeA: 'sine',
     wtTypeB: 'square',
-    wtMorph: 0,
+    wtMorph: 20,
     wtDataA: null,
     wtDataB: null,
     noiseMix: 0,
@@ -7459,13 +7491,18 @@ function beginMidiRecordedNote(pitch) {
     prSnapshot();
     midiRecordSnapshotTaken = true;
   }
-  midiRecordingNotes.set(pitch, getMidiRecordBeat());
+  midiRecordingNotes.set(pitch, {
+    startBeat: getMidiRecordBeat(),
+    startMs: performance.now()
+  });
 }
 
 function finishMidiRecordedNote(pitch) {
   if (!midiRecordingNotes.has(pitch) || currentTrackIdx < 0) return;
-  const startBeat = midiRecordingNotes.get(pitch);
+  const rec = midiRecordingNotes.get(pitch);
   midiRecordingNotes.delete(pitch);
+  if (performance.now() - rec.startMs > MIDI_MAX_NOTE_MS) return;
+  const startBeat = rec.startBeat;
   let endBeat = getMidiRecordBeat();
   let lenBeats = endBeat - startBeat;
   if (lenBeats <= 0 && Number.isFinite(playbackTotalBeat) && shouldLoopPlayback()) lenBeats += playbackTotalBeat;
@@ -7492,12 +7529,110 @@ function handleMidiMessage(event) {
   const command = status & 0xf0;
   const pitch = data1;
   if (command === 0x90 && data2 > 0) {
+    const now = performance.now();
+    if (now - lastMidiNoteOnAt < MIDI_MIN_NOTE_ON_INTERVAL_MS) return;
+    lastMidiNoteOnAt = now;
     previewNote(pitch, 0.25);
     beginMidiRecordedNote(pitch);
   } else if (command === 0x80 || (command === 0x90 && data2 === 0)) {
     finishMidiRecordedNote(pitch);
   }
 }
+
+function handleBluetoothMidiValue(event) {
+  const value = event.target.value;
+  const bytes = [];
+  for (let i = 0; i < value.byteLength; i++) bytes.push(value.getUint8(i));
+  let i = 1; // BLE MIDI header
+  while (i < bytes.length) {
+    if (bytes[i] & 0x80) i++; // timestamp low byte
+    if (i >= bytes.length) break;
+    const status = bytes[i++];
+    if (status < 0x80) continue;
+    const kind = status & 0xf0;
+    const size = (kind === 0xc0 || kind === 0xd0) ? 2 : 3;
+    const msg = [status];
+    while (msg.length < size && i < bytes.length) msg.push(bytes[i++]);
+    if (msg.length === size) handleMidiMessage({ data: msg });
+  }
+}
+
+function updateBluetoothMidiMenuLabel(name) {
+  const item = document.getElementById('menuBluetoothMidi');
+  if (!item) return;
+  item.textContent = name ? `🛜 블루투스 MIDI: ${name}` : '🛜 블루투스 MIDI 인식';
+}
+
+function setBluetoothMidiMenuBusy() {
+  const item = document.getElementById('menuBluetoothMidi');
+  if (item) item.textContent = '🛜 페어링 작업중...';
+}
+
+function onBluetoothMidiDisconnected() {
+  bluetoothMidiDevice = null;
+  bluetoothMidiCharacteristic = null;
+  updateBluetoothMidiMenuLabel('');
+  showConfirm('블루투스 MIDI 연결이 끊어졌어요.', () => {}, '확인', '');
+}
+
+async function disconnectBluetoothMidiDevice({ notify = true } = {}) {
+  const device = bluetoothMidiDevice;
+  const characteristic = bluetoothMidiCharacteristic;
+  setBluetoothMidiMenuBusy();
+  try {
+    if (characteristic) {
+      characteristic.removeEventListener('characteristicvaluechanged', handleBluetoothMidiValue);
+      try { await characteristic.stopNotifications(); } catch(e) {}
+    }
+    if (device) {
+      device.removeEventListener('gattserverdisconnected', onBluetoothMidiDisconnected);
+      if (device.gatt && device.gatt.connected) device.gatt.disconnect();
+    }
+  } finally {
+    bluetoothMidiDevice = null;
+    bluetoothMidiCharacteristic = null;
+    updateBluetoothMidiMenuLabel('');
+    if (notify) showConfirm('블루투스 MIDI 연결을 끊었어요.', () => {}, '확인', '');
+  }
+}
+
+async function connectBluetoothMidiDevice() {
+  if (!navigator.bluetooth) {
+    showConfirm('이 브라우저는 블루투스 MIDI 인식을 지원하지 않아요.\nChrome 또는 Edge에서 HTTPS로 열어주세요.', () => {}, '확인', '');
+    return;
+  }
+  setBluetoothMidiMenuBusy();
+  try {
+    const device = await navigator.bluetooth.requestDevice({
+      filters: [{ services: [BLE_MIDI_SERVICE_UUID] }]
+    });
+    bluetoothMidiDevice = device;
+    device.addEventListener('gattserverdisconnected', onBluetoothMidiDisconnected);
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(BLE_MIDI_SERVICE_UUID);
+    bluetoothMidiCharacteristic = await service.getCharacteristic(BLE_MIDI_CHARACTERISTIC_UUID);
+    await bluetoothMidiCharacteristic.startNotifications();
+    bluetoothMidiCharacteristic.addEventListener('characteristicvaluechanged', handleBluetoothMidiValue);
+    updateBluetoothMidiMenuLabel(device.name || '이름 없는 기기');
+    showConfirm(`블루투스 MIDI 연결됨\n${escapeHtml(device.name || '이름 없는 기기')}`, () => {}, '확인', '');
+  } catch(e) {
+    updateBluetoothMidiMenuLabel('');
+    if (e && e.name === 'NotFoundError') return;
+    showConfirm('블루투스 MIDI 기기를 인식하지 못했어요.\nOS에서 페어링되어 있는지, BLE MIDI를 지원하는 기기인지 확인해주세요.', () => {}, '확인', '');
+  }
+}
+
+document.getElementById('menuBluetoothMidi').addEventListener('click', () => {
+  closeMenu();
+  if (bluetoothMidiDevice && bluetoothMidiDevice.gatt && bluetoothMidiDevice.gatt.connected) {
+    const name = escapeHtml(bluetoothMidiDevice.name || '이름 없는 기기');
+    showConfirm(`블루투스 MIDI 연결을 끊을까요?\n${name}`, () => {
+      disconnectBluetoothMidiDevice();
+    }, '끊기', '취소');
+    return;
+  }
+  connectBluetoothMidiDevice();
+});
 
 document.getElementById('midiRecBtn').addEventListener('click', async () => {
   if (!midiRecordEnabled) {
@@ -7837,7 +7972,7 @@ document.getElementById('fileInput').addEventListener('change', e => {
       // 이전에 자동저장 파일이 있었으면 재연결 안내
       if (project._autoSaveFileName && window.showSaveFilePicker) {
         showConfirm(
-          `이 프로젝트는 "${project._autoSaveFileName}"에 자동저장되었어요.
+          `이 프로젝트는 "${escapeHtml(project._autoSaveFileName)}"에 자동저장되었어요.
 같은 파일로 계속 자동저장할까요?`,
           async () => {
             try {
@@ -8019,9 +8154,9 @@ function importMidi(buffer, sourceFileName = '') {
 
     renderTrackList();
     updateBpmDisplay();
-    showConfirm(`MIDI 불러오기 완료!\n${project.name}\n트랙 ${project.tracks.length}개  ·  ${bpm} BPM`, () => {}, '확인', '');
+    showConfirm(`MIDI 불러오기 완료!\n${escapeHtml(project.name)}\n트랙 ${project.tracks.length}개  ·  ${bpm} BPM`, () => {}, '확인', '');
   } catch(e) {
-    showConfirm('MIDI 파일을 읽을 수 없어요:\n' + e.message, () => {}, '확인', '');
+    showConfirm('MIDI 파일을 읽을 수 없어요:\n' + escapeHtml(e.message), () => {}, '확인', '');
   }
 }
 
@@ -8098,7 +8233,7 @@ document.getElementById('menuExportCustom').addEventListener('click', () => {
     const row = document.createElement('div');
     row.style.cssText = 'background:var(--bg3);border-radius:8px;padding:12px;border:1px solid var(--border);';
     row.innerHTML = `
-      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;">Ch.${i+1} · ${(track.waveType||'sine').toUpperCase()}</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;">Ch.${i+1} · ${escapeHtml((track.waveType||'sine').toUpperCase())}</div>
       <select data-idx="${i}" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px;font-family:'Consolas, D2Coding, monospace',monospace;font-size:11px;outline:none;">
         <option value="0">로딩 중...</option>
       </select>
@@ -8182,7 +8317,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.1.0<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.1.1<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
     () => {}, '확인', ''
   );
 });
