@@ -4284,6 +4284,13 @@ function computeLastNoteBeat() {
   return b;
 }
 
+const RECORD_EMPTY_BARS = 4; // 빈 상태에서 녹음 시작 시 반복할 마디 수
+// 녹음 모드 루프 끝(박자): 노트가 없으면 RECORD_EMPTY_BARS 마디, 있으면 프로젝트 전체 길이
+function getRecordLoopEndBeat() {
+  const beatsPerBar = Math.max(1, project.timeNum || 4);
+  return computeLastNoteBeat() === 0 ? beatsPerBar * RECORD_EMPTY_BARS : getProjectEndBeat();
+}
+
 function extendProjectBarsForBeat(beat, force = false) {
   if (!force && !midiRecordEnabled) return;
   const beatsPerBar = Math.max(1, project.timeNum || 4);
@@ -4492,7 +4499,7 @@ function startPlayback(soloOnly = false) {
   //  - 녹음 OFF + 루프 ON: 마지막 노트 끝에서 바로 반복
   //  - 둘 다 OFF: 마지막 노트 + 1박
   if (midiRecordEnabled) {
-    playbackTotalBeat = getProjectEndBeat();
+    playbackTotalBeat = getRecordLoopEndBeat();
   } else if (loopEnabled) {
     playbackTotalBeat = lastNoteBeat;
   } else {
@@ -7678,8 +7685,16 @@ document.getElementById('midiRecBtn').addEventListener('click', async () => {
     if (!ok) return;
     midiRecordEnabled = true;
     midiRecordSnapshotTaken = false;
-    // 재생 중 녹음 ON → 루프 끝을 프로젝트 전체 길이로 스냅샷 (이후 세션 동안 고정)
-    if (isPlaying) playbackTotalBeat = getProjectEndBeat();
+    if (isPlaying) {
+      if (playbackTimer) {
+        // 이미 타이머가 도는 정상 재생 중 → 루프 끝만 녹음 기준으로 스냅샷
+        playbackTotalBeat = getRecordLoopEndBeat();
+      } else {
+        // 빈 프로젝트에서 play가 무동작이었던 경우(노트 0개 가드로 타이머 미시작) →
+        // 이제 녹음 모드로 실제 재생을 시작해 플레이헤드가 움직이게 한다.
+        startPlayback(playbackSoloOnly);
+      }
+    }
   } else {
     flushMidiRecordingNotes(PR.playPos);
     midiRecordEnabled = false;
