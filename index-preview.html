@@ -7352,6 +7352,18 @@ function showConfirm(msg, onYes, yesLabel, noLabel) {
       return;
     }
 
+    if (e.ctrlKey && key === 'c') {
+      e.preventDefault();
+      prCopySelection();
+      return;
+    }
+
+    if (e.ctrlKey && key === 'v') {
+      e.preventDefault();
+      prPasteClipboard();
+      return;
+    }
+
     if (e.ctrlKey && key === 'd') {
       e.preventDefault();
       deselectAllNotesByKey();
@@ -9560,35 +9572,32 @@ document.addEventListener('keydown', e => {
 let prClipboard = []; // 복사된 노트들
 let prClipboardMinBeat = 0; // 복사 시작 위치
 
-document.getElementById('copyBtn').addEventListener('click', () => {
+// 선택된 노트를 클립보드로 복사. 복사된 개수를 반환(0이면 선택 없음).
+function prCopySelection() {
   const selected = PR.notes.filter(n => n.selected);
   if (selected.length === 0) {
-    // 선택된 노트 없음
-    const btn = document.getElementById('copyBtn');
     showPRToast('선택된 노트 없음');
-    btn.textContent = '선택 없음';
-    setTimeout(() => btn.textContent = 'COPY', 1000);
-    return;
+    return 0;
   }
   prClipboard = JSON.parse(JSON.stringify(selected));
   prClipboardMinBeat = Math.min(...prClipboard.map(n => n.startBeat));
-  // 복사 피드백
-  const btn = document.getElementById('copyBtn');
   showPRToast(`📋 ${selected.length}개 복사됨`);
-  btn.textContent = `✓ ${selected.length}개`;
-  setTimeout(() => btn.textContent = 'COPY', 800);
-});
+  return selected.length;
+}
 
-document.getElementById('pasteBtn').addEventListener('click', () => {
+// 현재 재생바 위치에 붙여넣기.
+function prPasteClipboard() {
   if (prClipboard.length === 0) { showPRToast('복사된 노트 없음'); return; }
   showPRToast(`📌 ${prClipboard.length}개 붙여넣기`);
   prSnapshot();
 
-  // 현재 재생바 위치에 붙여넣기
-  const offset = PR.playPos - prClipboardMinBeat;
+  // 앵커(붙여넣기 기준점)만 스냅하고 노트 간 상대 간격은 원본 그대로 유지한다.
+  // 노트마다 개별 스냅하면 복사 당시보다 그리드가 넓어졌을 때 간격이 뭉개진다.
+  const anchor = snapBeat(PR.playPos);
+  const offset = anchor - prClipboardMinBeat;
   const pasted = prClipboard.map(n => ({
     ...n,
-    startBeat: Math.max(0, snapBeat(n.startBeat + offset)),
+    startBeat: Math.max(0, n.startBeat + offset),
     selected: true
   }));
 
@@ -9596,6 +9605,22 @@ document.getElementById('pasteBtn').addEventListener('click', () => {
   PR.notes.forEach(n => n.selected = false);
   PR.notes.push(...pasted);
   drawPR();
+}
+
+document.getElementById('copyBtn').addEventListener('click', () => {
+  const btn = document.getElementById('copyBtn');
+  const count = prCopySelection();
+  if (count === 0) {
+    btn.textContent = '선택 없음';
+    setTimeout(() => btn.textContent = 'COPY', 1000);
+    return;
+  }
+  btn.textContent = `✓ ${count}개`;
+  setTimeout(() => btn.textContent = 'COPY', 800);
+});
+
+document.getElementById('pasteBtn').addEventListener('click', () => {
+  prPasteClipboard();
 });
 
 // 피아노롤 ⏮ 처음으로
