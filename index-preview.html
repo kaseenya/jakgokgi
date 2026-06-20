@@ -3170,7 +3170,6 @@
 </div>
 <button class="ex-style-058" id="creditBtn">ℹ️ 크레딧</button>
 <button class="ex-style-058" id="sampleProjectBtn">📦 샘플 프로젝트 불러오기</button>
-<button class="ps-save-btn" id="psSave">프로젝트 설정 저장</button>
 </div>
 </div>
 <!-- ===== RENAME ===== -->
@@ -6498,7 +6497,7 @@ function setupPRTouch() {
     // CSS 크기와 실제 캔버스 픽셀 크기 비율 보정
     const scaleX = prCanvas.width / rect.width;
     const scaleY = prCanvas.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
+    const x = (e.clientX - rect.left) * scaleX + touchOffsetBeats * PR.beatW; // 손 보정(가로): 피아노롤 안 모든 터치에 적용
     const y = (e.clientY - rect.top) * scaleY;
     const beat = xToBeat(x);
     const pitch = yToPitch(y);
@@ -6518,7 +6517,7 @@ function setupPRTouch() {
       return;
     }
 
-    const snapped = Math.max(0, snapBeat(beat + touchOffsetBeats));
+    const snapped = Math.max(0, snapBeat(beat)); // beat에 이미 손 보정 반영됨
     const snapLen = PR.snapValues[PR.snapIdx] || (project.timeNum / 8); // OFF면 1/8 기본
     const newPitch = Math.max(21, Math.min(107, pitch));
 
@@ -6584,7 +6583,7 @@ function setupPRTouch() {
     const rect = prCanvas.getBoundingClientRect();
     const scaleX = prCanvas.width / rect.width;
     const scaleY = prCanvas.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
+    const x = (e.clientX - rect.left) * scaleX + touchOffsetBeats * PR.beatW; // 손 보정(가로): 피아노롤 안 모든 터치에 적용
     const y = (e.clientY - rect.top) * scaleY;
 
     if (prTouchState.type === 'draw' && prTouchState.noteIdx >= 0) {
@@ -6676,7 +6675,7 @@ function setupPRTouch() {
     const rect = prCanvas.getBoundingClientRect();
     const scaleX = prCanvas.width / rect.width;
     const scaleY = prCanvas.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
+    const x = (e.clientX - rect.left) * scaleX + touchOffsetBeats * PR.beatW; // 손 보정(가로): 피아노롤 안 모든 터치에 적용
     const y = (e.clientY - rect.top) * scaleY;
     const dx = Math.abs(x - prTouchState.startX);
     const dy = Math.abs(y - prTouchState.startY);
@@ -8481,6 +8480,9 @@ document.querySelectorAll('.ps-touch-btn:not(.theme-btn)').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.ps-touch-btn:not(.theme-btn)').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    const v = parseFloat(btn.dataset.val);
+    if (Number.isFinite(v)) touchOffsetBeats = v; // 손 보정 즉시 적용
+    scheduleAutoSave();
   });
 });
 
@@ -8490,13 +8492,8 @@ document.querySelectorAll('.theme-btn').forEach(btn => {
   });
 });
 
-document.getElementById('psSave').addEventListener('click', () => {
-  // 터치 보정 값 저장
-  const activeBtn = document.querySelector('.ps-touch-btn:not(.theme-btn).active');
-  if (activeBtn) {
-    const nextTouchOffset = parseFloat(activeBtn.dataset.val);
-    if (Number.isFinite(nextTouchOffset)) touchOffsetBeats = nextTouchOffset;
-  }
+// 프로젝트 설정 입력을 즉시 project에 반영하고 자동저장한다(저장 버튼 없음).
+function applyProjectSettingsFromInputs() {
   project.name = (document.getElementById('projectNameInput').value || '').trim() || '새 프로젝트';
   let bpm = parseInt(document.getElementById('bpmInput').value);
   bpm = Math.max(1, Math.min(1000, bpm || 120));
@@ -8505,22 +8502,39 @@ document.getElementById('psSave').addEventListener('click', () => {
   let den = parseInt(document.getElementById('tsDenInput').value) || 4;
   let bars = parseInt(document.getElementById('barsInput').value);
   bars = Math.max(1, Math.min(999, bars || 4));
+
+  const sigChanged = (project.timeNum !== num) || (project.timeDen !== den);
   project.bpm = bpm;
   project.timeNum = num;
   project.timeDen = den;
   project.bars = bars;
   project.theme = getCurrentTheme();
-  // 혹시 이전 버전에서 잘못 저장된 터치 보정값이 있으면 BPM 변경 시 같이 정리
   if (!Number.isFinite(touchOffsetBeats)) touchOffsetBeats = 0;
-  // 박자 변경 시 스냅을 1/4로 리셋
-  PR.snapIdx = 2;
-  const snapBtn = document.getElementById('snapBtn');
-  if (snapBtn) snapBtn.value = PR.snapIdx;
+
+  // 박자(분자/분모)가 실제로 바뀐 경우에만 스냅을 1/4로 리셋
+  if (sigChanged) {
+    PR.snapIdx = 2;
+    const snapBtn = document.getElementById('snapBtn');
+    if (snapBtn) snapBtn.value = PR.snapIdx;
+  }
+
+  // 클램프된 값으로 입력칸도 동기화
+  document.getElementById('projectNameInput').value = project.name;
+  document.getElementById('bpmInput').value = project.bpm;
+  document.getElementById('tsNumInput').value = project.timeNum;
+  document.getElementById('barsInput').value = project.bars;
+
   updateBpmDisplay();
   refreshAllPreviews();
   drawMainProgress();
   if (prCtx) { drawPR(); drawTimeline(); }
-  document.getElementById('projSettings').classList.remove('open');
+  scheduleAutoSave();
+}
+
+// 각 입력을 바꾸면(커밋 시점) 즉시 반영 + 자동저장
+['projectNameInput', 'bpmInput', 'tsNumInput', 'tsDenInput', 'barsInput'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('change', applyProjectSettingsFromInputs);
 });
 
 function updateBpmDisplay() {
