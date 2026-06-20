@@ -8503,20 +8503,13 @@ function applyProjectSettingsFromInputs() {
   let bars = parseInt(document.getElementById('barsInput').value);
   bars = Math.max(1, Math.min(999, bars || 4));
 
-  const sigChanged = (project.timeNum !== num) || (project.timeDen !== den);
   project.bpm = bpm;
   project.timeNum = num;
   project.timeDen = den;
   project.bars = bars;
   project.theme = getCurrentTheme();
   if (!Number.isFinite(touchOffsetBeats)) touchOffsetBeats = 0;
-
-  // 박자(분자/분모)가 실제로 바뀐 경우에만 스냅을 1/4로 리셋
-  if (sigChanged) {
-    PR.snapIdx = 2;
-    const snapBtn = document.getElementById('snapBtn');
-    if (snapBtn) snapBtn.value = PR.snapIdx;
-  }
+  // 박자를 바꿔도 그리드(스냅) 설정은 그대로 유지한다.
 
   // 클램프된 값으로 입력칸도 동기화
   document.getElementById('projectNameInput').value = project.name;
