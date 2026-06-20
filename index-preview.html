@@ -6190,6 +6190,14 @@ function drawPR() {
   const totalP = 87; // 107 - 21 + 1
   const tb = totalBeats();
 
+  // 가로 스크롤을 존재하는 마디(totalBeats) 범위로 제한 — 없는 마디까지 넘어가지 않게.
+  // 스크롤을 바꾸는 경로가 여러 곳이라, 매 그리기마다 한 곳에서 보정한다.
+  {
+    const maxScrollX = Math.max(-8, tb * PR.beatW - W);
+    if (PR.scrollX > maxScrollX) PR.scrollX = maxScrollX;
+    if (PR.scrollX < -8) PR.scrollX = -8;
+  }
+
   // Background rows
   for (let p = 107; p >= 21; p--) {
     const y = pitchToY(p);
@@ -6218,6 +6226,16 @@ function drawPR() {
   const lastVisibleBeat = Math.min(tb + beatsPerBar, xToBeat(W + PR.beatW));
   const startBar = Math.max(0, Math.floor(firstVisibleBeat / beatsPerBar) - 1);
   const endBar = Math.ceil(lastVisibleBeat / beatsPerBar) + 1;
+
+  // 마디 교차 음영 (체스판처럼 홀수 마디를 살짝 더 어둡게) — 격자선/노트보다 먼저 깔아 뒤 배경만 어둡게
+  for (let bar = startBar; bar <= endBar; bar++) {
+    if (bar % 2 === 0) continue; // 첫 마디(0)는 그대로, 그 다음 마디부터 한 칸 걸러 어둡게
+    const xLeft = Math.max(0, beatToX(bar * beatsPerBar));
+    const xRight = Math.min(W, beatToX((bar + 1) * beatsPerBar));
+    if (xRight <= xLeft) continue;
+    prCtx.fillStyle = theme.barShade || 'rgba(0,0,0,0.12)';
+    prCtx.fillRect(xLeft, 0, xRight - xLeft, H);
+  }
 
   function drawGridLineAt(beat, strength) {
     const x = beatToX(beat);
@@ -6844,6 +6862,11 @@ function setupPRTouch() {
 
 function clampScroll() {
   PR.scrollX = Math.max(-8, PR.scrollX); // 왼쪽 8px 여유 (첫 칸 안 잘리게)
+  if (prCanvas) {
+    // 오른쪽: 존재하는 마디(totalBeats) 너머로는 못 넘어가게 제한
+    const maxScrollX = Math.max(-8, totalBeats() * PR.beatW - prCanvas.width);
+    if (PR.scrollX > maxScrollX) PR.scrollX = maxScrollX;
+  }
   PR.scrollY = Math.max(0, PR.scrollY);
 }
 
