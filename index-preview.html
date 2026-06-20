@@ -8414,7 +8414,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.1.3<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.1.4<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
     () => {}, '확인', ''
   );
 });
@@ -9257,7 +9257,7 @@ function downloadBlob(blob, filename, silent) {
 // MAIN PROGRESS BAR
 // ============================================================
 let mainProgressScrollX = 0; // 진행바 스크롤 오프셋 (픽셀)
-let touchOffsetBeats = -0.125; // 터치 위치 보정 (오른손잡이 기본: 왼쪽으로 0.25박자)
+let touchOffsetBeats = 0; // 터치 위치 보정 (기본: 없음)
 let mainProgressBeatW = 80;  // 진행바 beatW (미리보기와 공유)
 
 function getMainProgressLeftW() {
