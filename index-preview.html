@@ -6517,7 +6517,10 @@ function setupPRTouch() {
       return;
     }
 
-    const snapped = Math.max(0, snapBeat(beat)); // beat에 이미 손 보정 반영됨
+    // 생성은 "클릭한 칸"에 들어가도록 내림(floor) 스냅. (round로 하면 칸 오른쪽 절반 클릭 시 다음 칸으로 밀림)
+    // beat에는 손 보정이 이미 반영돼 있음(보정 0이면 클릭 그대로).
+    const snapS = PR.snapValues[PR.snapIdx];
+    const snapped = Math.max(0, snapS ? Math.floor(beat / snapS) * snapS : beat);
     const snapLen = PR.snapValues[PR.snapIdx] || (project.timeNum / 8); // OFF면 1/8 기본
     const newPitch = Math.max(21, Math.min(107, pitch));
 
