@@ -6181,49 +6181,33 @@ document.getElementById('volSlider').addEventListener('input', e => {
 });
 
 function installSettingsRangeTouchGuard() {
-  const HOLD_MS = 250;
-  const MOVE_PX = 8;
-  const states = new WeakMap();
+  const content = document.querySelector('#settingsScreen .settings-content');
+  if (!content) return;
+  let startX = 0;
+  let startY = 0;
+  let suppressUntil = 0;
+
+  content.addEventListener('touchstart', e => {
+    if (!e.touches || e.touches.length !== 1) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  content.addEventListener('touchmove', e => {
+    if (!e.touches || e.touches.length !== 1) return;
+    const dx = Math.abs(e.touches[0].clientX - startX);
+    const dy = Math.abs(e.touches[0].clientY - startY);
+    if (dy > 8 && dy > dx * 1.2) {
+      suppressUntil = performance.now() + 350;
+    }
+  }, { passive: true });
 
   document.querySelectorAll('#settingsScreen input[type="range"]').forEach(slider => {
     slider.addEventListener('pointerdown', e => {
-      if (e.pointerType !== 'touch') return;
-      const state = {
-        value: slider.value,
-        armed: false,
-        moved: false,
-        x: e.clientX,
-        y: e.clientY,
-        timer: null
-      };
-      state.timer = setTimeout(() => {
-        if (!state.moved) state.armed = true;
-      }, HOLD_MS);
-      states.set(slider, state);
-    });
-
-    slider.addEventListener('pointermove', e => {
-      const state = states.get(slider);
-      if (!state || state.armed) return;
-      if (Math.hypot(e.clientX - state.x, e.clientY - state.y) > MOVE_PX) {
-        state.moved = true;
+      if (e.pointerType === 'touch' && performance.now() < suppressUntil) {
+        e.preventDefault();
+        e.stopPropagation();
       }
-    });
-
-    const clearState = () => {
-      const state = states.get(slider);
-      if (state && state.timer) clearTimeout(state.timer);
-      states.delete(slider);
-    };
-    slider.addEventListener('pointerup', clearState);
-    slider.addEventListener('pointercancel', clearState);
-
-    slider.addEventListener('input', e => {
-      const state = states.get(slider);
-      if (!state || state.armed) return;
-      slider.value = state.value;
-      e.preventDefault();
-      e.stopImmediatePropagation();
     }, true);
   });
 }
