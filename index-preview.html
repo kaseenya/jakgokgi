@@ -6180,6 +6180,56 @@ document.getElementById('volSlider').addEventListener('input', e => {
   document.getElementById(id).addEventListener('input', savePitchControlsFromInputs);
 });
 
+function installSettingsRangeTouchGuard() {
+  const HOLD_MS = 250;
+  const MOVE_PX = 8;
+  const states = new WeakMap();
+
+  document.querySelectorAll('#settingsScreen input[type="range"]').forEach(slider => {
+    slider.addEventListener('pointerdown', e => {
+      if (e.pointerType !== 'touch') return;
+      const state = {
+        value: slider.value,
+        armed: false,
+        moved: false,
+        x: e.clientX,
+        y: e.clientY,
+        timer: null
+      };
+      state.timer = setTimeout(() => {
+        if (!state.moved) state.armed = true;
+      }, HOLD_MS);
+      states.set(slider, state);
+    });
+
+    slider.addEventListener('pointermove', e => {
+      const state = states.get(slider);
+      if (!state || state.armed) return;
+      if (Math.hypot(e.clientX - state.x, e.clientY - state.y) > MOVE_PX) {
+        state.moved = true;
+      }
+    });
+
+    const clearState = () => {
+      const state = states.get(slider);
+      if (state && state.timer) clearTimeout(state.timer);
+      states.delete(slider);
+    };
+    slider.addEventListener('pointerup', clearState);
+    slider.addEventListener('pointercancel', clearState);
+
+    slider.addEventListener('input', e => {
+      const state = states.get(slider);
+      if (!state || state.armed) return;
+      slider.value = state.value;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }, true);
+  });
+}
+
+installSettingsRangeTouchGuard();
+
 document.getElementById('muteBtn').addEventListener('click', () => {
   if (currentTrackIdx < 0) return;
   project.tracks[currentTrackIdx].muted = !project.tracks[currentTrackIdx].muted;
