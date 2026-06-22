@@ -2877,6 +2877,21 @@
 </div>
 </div>
 <div class="settings-group">
+<div class="settings-label">Pitch</div>
+<div class="slider-row">
+<div class="slider-top"><span>Detune</span><span id="detuneVal">0 ct</span></div>
+<input id="detuneSlider" max="1200" min="-1200" step="1" type="range" value="0"/>
+</div>
+<div class="slider-row">
+<div class="slider-top"><span>Drop</span><span id="pitchEnvAmountVal">0 st</span></div>
+<input id="pitchEnvAmountSlider" max="48" min="0" step="1" type="range" value="0"/>
+</div>
+<div class="slider-row">
+<div class="slider-top"><span>Decay</span><span id="pitchEnvDecayVal">80ms</span></div>
+<input id="pitchEnvDecaySlider" max="1" min="0.005" step="0.005" type="range" value="0.08"/>
+</div>
+</div>
+<div class="settings-group">
 <div class="ex-style-012">
 <div class="settings-label ex-style-013">Synth</div>
 <button class="ex-style-014" id="randomSynthBtn">🎲 랜덤</button>
@@ -3326,6 +3341,52 @@ function pitchToHz(pitch) {
   return 440 * Math.pow(2, (pitch - 69) / 12);
 }
 
+function centsToRatio(cents) {
+  return Math.pow(2, cents / 1200);
+}
+
+function getTrackDetuneCents(track) {
+  const detune = Number(track && track.detune);
+  return Number.isFinite(detune) ? Math.max(-1200, Math.min(1200, detune)) : 0;
+}
+
+function getTrackPitchEnv(track) {
+  const env = track && track.pitchEnv ? track.pitchEnv : {};
+  const amount = Number(env.amount);
+  const decay = Number(env.decay);
+  return {
+    amount: Number.isFinite(amount) ? Math.max(0, Math.min(48, amount)) : 0,
+    decay: Number.isFinite(decay) ? Math.max(0.005, Math.min(1, decay)) : 0.08
+  };
+}
+
+function applyOscPitchAutomation(osc, track, startTime) {
+  const detune = getTrackDetuneCents(track);
+  const pitchEnv = getTrackPitchEnv(track);
+  const detuneParam = osc.detune;
+  detuneParam.cancelScheduledValues(startTime);
+  if (pitchEnv.amount > 0) {
+    detuneParam.setValueAtTime(detune + pitchEnv.amount * 100, startTime);
+    detuneParam.linearRampToValueAtTime(detune, startTime + pitchEnv.decay);
+  } else {
+    detuneParam.setValueAtTime(detune, startTime);
+  }
+}
+
+function applySamplerPitchAutomation(src, baseRatio, track, startTime) {
+  const pitchEnv = getTrackPitchEnv(track);
+  const detuneRatio = centsToRatio(getTrackDetuneCents(track));
+  const finalRatio = Math.max(0.0001, baseRatio * detuneRatio);
+  const rate = src.playbackRate;
+  rate.cancelScheduledValues(startTime);
+  if (pitchEnv.amount > 0) {
+    rate.setValueAtTime(finalRatio * Math.pow(2, pitchEnv.amount / 12), startTime);
+    rate.exponentialRampToValueAtTime(finalRatio, startTime + pitchEnv.decay);
+  } else {
+    rate.setValueAtTime(finalRatio, startTime);
+  }
+}
+
 function createNoiseSource(ctx, duration) {
   // 화이트 노이즈 버퍼 생성
   const sampleRate = ctx.sampleRate;
@@ -3340,14 +3401,21 @@ function createNoiseSource(ctx, duration) {
 
 // 노이즈 소스 + (옵션) 피치 밴드패스 필터 연결
 // 반환: { source, output } — output을 env에 연결하면 됨
-function createNoiseLayer(ctx, pitch, duration, usePitchFilter, gainVal) {
+function createNoiseLayer(ctx, pitch, duration, usePitchFilter, gainVal, track, startTime) {
   const src = createNoiseSource(ctx, duration);
   const gain = ctx.createGain();
   gain.gain.value = gainVal;
   if (usePitchFilter) {
     const bp = ctx.createBiquadFilter();
     bp.type = 'bandpass';
-    bp.frequency.value = pitchToHz(pitch);
+    const baseFreq = pitchToHz(pitch) * centsToRatio(getTrackDetuneCents(track));
+    const pitchEnv = getTrackPitchEnv(track);
+    if (Number.isFinite(startTime) && pitchEnv.amount > 0) {
+      bp.frequency.setValueAtTime(baseFreq * Math.pow(2, pitchEnv.amount / 12), startTime);
+      bp.frequency.exponentialRampToValueAtTime(Math.max(1, baseFreq), startTime + pitchEnv.decay);
+    } else {
+      bp.frequency.value = baseFreq;
+    }
     bp.Q.value = 2;
     src.connect(bp);
     bp.connect(gain);
@@ -3867,6 +3935,8 @@ document.getElementById('randomSynthBtn').addEventListener('click', () => {
     s: +(Math.random()).toFixed(2),
     r: +(Math.random() * 1.5 + 0.01).toFixed(2),
   };
+  track.detune = 0;
+  track.pitchEnv = { amount: 0, decay: 0.08 };
 
   // LFO 랜덤 (50% 확률로 활성)
   if (Math.random() < 0.5) {
@@ -3890,6 +3960,7 @@ document.getElementById('randomSynthBtn').addEventListener('click', () => {
   document.getElementById('adsrS').value = track.adsr.s;
   document.getElementById('adsrR').value = track.adsr.r;
   updateAdsrDisplay();
+  updatePitchControlDisplay(track);
   initWTEditor(track);
   initLFOEditor(track);
   saveCurrentSettings();
@@ -3963,7 +4034,7 @@ function previewNote(pitch, durationBeats) {
   env.connect(getMasterDest(ctx));
 
   if (track.waveType === 'sampler') {
-    const src = createSamplerSource(ctx, track, pitch, duration);
+    const src = createSamplerSource(ctx, track, pitch, duration, now);
     if (src) {
       src.connect(env);
       src.start(now);
@@ -3975,7 +4046,7 @@ function previewNote(pitch, durationBeats) {
   const osc = ctx.createOscillator();
   if (track.waveType === 'noise') {
     // NOISE 모드: 피치 필터 선택 가능
-    const noise = createNoiseLayer(ctx, pitch, noteEnd - now + 0.05, !!track.noisePitchFilter, 1);
+    const noise = createNoiseLayer(ctx, pitch, noteEnd - now + 0.05, !!track.noisePitchFilter, 1, track, now);
     noise.output.connect(env);
     noise.source.start(now);
     noise.source.stop(noteEnd + 0.05);
@@ -3985,6 +4056,7 @@ function previewNote(pitch, durationBeats) {
   // wavetable 모드 (기본)
   osc.setPeriodicWave(wtMakeWave(ctx, track));
   osc.frequency.value = pitchToHz(pitch);
+  applyOscPitchAutomation(osc, track, now);
   const oscGain = ctx.createGain();
   const noiseMix = (track.noiseMix || 0) / 100;
   // wavetable 소리는 (1 - noiseMix), 노이즈는 noiseMix로 믹스
@@ -3997,7 +4069,7 @@ function previewNote(pitch, durationBeats) {
 
   // 노이즈 믹스
   if (noiseMix > 0) {
-    const noise = createNoiseLayer(ctx, pitch, noteEnd - now + 0.05, !!track.noisePitchFilter, noiseMix);
+    const noise = createNoiseLayer(ctx, pitch, noteEnd - now + 0.05, !!track.noisePitchFilter, noiseMix, track, now);
     noise.output.connect(env);
     noise.source.start(now);
     noise.source.stop(noteEnd + 0.05);
@@ -4354,14 +4426,14 @@ function scheduleNote(ctx2, track, note, bps) {
 
   const validTypes2 = ['sine','square','sawtooth','triangle'];
   if (track.waveType === 'sampler') {
-    const src = createSamplerSource(ctx2, track, note.pitch, duration);
+    const src = createSamplerSource(ctx2, track, note.pitch, duration, now);
     if (src) {
       src.connect(env); env.connect(panNode); panNode.connect(getMasterDest(ctx2));
       src.start(now); src.stop(noteEnd + 0.05);
       activeOscs.push({osc: src, env});
     }
   } else if (track.waveType === 'noise') {
-    const noise = createNoiseLayer(ctx2, note.pitch, noteEnd - now + 0.05, !!track.noisePitchFilter, 1);
+    const noise = createNoiseLayer(ctx2, note.pitch, noteEnd - now + 0.05, !!track.noisePitchFilter, 1, track, now);
     noise.output.connect(env); env.connect(panNode); panNode.connect(getMasterDest(ctx2));
     noise.source.start(now); noise.source.stop(noteEnd + 0.05);
     activeOscs.push({osc: noise.source, env});
@@ -4369,6 +4441,7 @@ function scheduleNote(ctx2, track, note, bps) {
     // 웨이브테이블 (기본)
     osc.setPeriodicWave(wtMakeWave(ctx2, track));
     osc.frequency.value = pitchToHz(note.pitch);
+    applyOscPitchAutomation(osc, track, now);
     const oscGain = ctx2.createGain();
     const noiseMix = (track.noiseMix || 0) / 100;
     oscGain.gain.value = 1 - noiseMix * 0.5;
@@ -4383,7 +4456,7 @@ function scheduleNote(ctx2, track, note, bps) {
 
     // 노이즈 믹스
     if (noiseMix > 0) {
-      const noise = createNoiseLayer(ctx2, note.pitch, noteEnd - now + 0.05, !!track.noisePitchFilter, noiseMix);
+      const noise = createNoiseLayer(ctx2, note.pitch, noteEnd - now + 0.05, !!track.noisePitchFilter, noiseMix, track, now);
       noise.output.connect(env);
       noise.source.start(now);
       noise.source.stop(noteEnd + 0.05);
@@ -5096,6 +5169,10 @@ function normalizeProjectAfterLoad() {
     // 임포트된 파일의 임의 문자열을 안전하게 정규화
     if (track.name != null) track.name = String(track.name);
     if (track.color != null) track.color = safeColor(track.color);
+    if (!Number.isFinite(Number(track.detune))) track.detune = 0;
+    if (!track.pitchEnv || typeof track.pitchEnv !== 'object') track.pitchEnv = { amount: 0, decay: 0.08 };
+    track.pitchEnv.amount = getTrackPitchEnv(track).amount;
+    track.pitchEnv.decay = getTrackPitchEnv(track).decay;
     if (track.prView) {
       track.prView.cellH = Number(track.prView.cellH);
       track.prView.beatW = Number(track.prView.beatW);
@@ -5504,6 +5581,8 @@ document.getElementById('addTrackBtn').addEventListener('click', () => {
     noiseMix: 0,
     noisePitchFilter: false,
     lfo: { target: 'none', rate: 4, depth: 50, wave: 'sine' },
+    detune: 0,
+    pitchEnv: { amount: 0, decay: 0.08 },
     adsr: {a: 0.01, d: 0.1, s: 0.7, r: 0.2},
     pan: 64,
     volume: 0,
@@ -5786,7 +5865,7 @@ document.getElementById('samplerPreviewBtn').addEventListener('click', () => {
   env.gain.setValueAtTime(vol * 0.6, now);
   env.gain.linearRampToValueAtTime(0, now + 1.5);
   env.connect(getMasterDest(ctx));
-  const src = createSamplerSource(ctx, track, root, 1.5);
+  const src = createSamplerSource(ctx, track, root, 1.5, now);
   if (src) {
     src.connect(env);
     src.start(now);
@@ -5794,7 +5873,7 @@ document.getElementById('samplerPreviewBtn').addEventListener('click', () => {
   }
 });
 
-function createSamplerSource(ctx, track, pitch, duration) {
+function createSamplerSource(ctx, track, pitch, duration, startTime) {
   if (!track.samplerData) return null;
   const sampleRate = track.samplerRate || 44100;
   const rootPitch = track.samplerRoot || 60;
@@ -5815,7 +5894,8 @@ function createSamplerSource(ctx, track, pitch, duration) {
 
   const src = ctx.createBufferSource();
   src.buffer = buf;
-  src.playbackRate.value = ratio;
+  if (Number.isFinite(startTime)) applySamplerPitchAutomation(src, ratio, track, startTime);
+  else src.playbackRate.value = ratio * centsToRatio(getTrackDetuneCents(track));
   return src;
 }
 
@@ -5860,6 +5940,7 @@ function openSettings(i) {
   updatePanLabel(track.pan);
   document.getElementById('volSlider').value = getTrackVolumeDb(track);
   updateVolLabel(getTrackVolumeDb(track));
+  updatePitchControlDisplay(track);
   document.getElementById('muteBtn').className = 'toggle-btn' + (track.muted ? ' active' : '');
   document.getElementById('soloBtn').className = 'toggle-btn' + (track.solo ? ' active solo-active' : '');
   document.getElementById('ghostBtn').className = 'toggle-btn' + (track.ghost !== false ? ' active' : '');
@@ -5908,6 +5989,11 @@ function saveCurrentSettings() {
   const track = project.tracks[currentTrackIdx];
   track.pan = parseInt(document.getElementById('panSlider').value);
   track.volume = parseInt(document.getElementById('volSlider').value, 10);
+  track.detune = parseInt(document.getElementById('detuneSlider').value, 10) || 0;
+  track.pitchEnv = {
+    amount: parseFloat(document.getElementById('pitchEnvAmountSlider').value) || 0,
+    decay: parseFloat(document.getElementById('pitchEnvDecaySlider').value) || 0.08
+  };
   // ADSR은 updateAdsrDisplay에서 이미 즉시 반영되므로 여기서는 건드리지 않음
 }
 
@@ -5935,11 +6021,37 @@ function updateVolLabel(v) {
   document.getElementById('volVal').textContent = (db > 0 ? '+' : '') + db + ' dB';
 }
 
+function updatePitchControlDisplay(track) {
+  const detune = getTrackDetuneCents(track);
+  const pitchEnv = getTrackPitchEnv(track);
+  document.getElementById('detuneSlider').value = detune;
+  document.getElementById('detuneVal').textContent = (detune > 0 ? '+' : '') + detune + ' ct';
+  document.getElementById('pitchEnvAmountSlider').value = pitchEnv.amount;
+  document.getElementById('pitchEnvAmountVal').textContent = pitchEnv.amount + ' st';
+  document.getElementById('pitchEnvDecaySlider').value = pitchEnv.decay;
+  document.getElementById('pitchEnvDecayVal').textContent = Math.round(pitchEnv.decay * 1000) + 'ms';
+}
+
+function savePitchControlsFromInputs() {
+  if (currentTrackIdx < 0) return;
+  const track = project.tracks[currentTrackIdx];
+  track.detune = parseInt(document.getElementById('detuneSlider').value, 10) || 0;
+  track.pitchEnv = {
+    amount: parseFloat(document.getElementById('pitchEnvAmountSlider').value) || 0,
+    decay: parseFloat(document.getElementById('pitchEnvDecaySlider').value) || 0.08
+  };
+  updatePitchControlDisplay(track);
+  scheduleAutoSave();
+}
+
 document.getElementById('panSlider').addEventListener('input', e => {
   updatePanLabel(parseInt(e.target.value));
 });
 document.getElementById('volSlider').addEventListener('input', e => {
   updateVolLabel(parseInt(e.target.value));
+});
+['detuneSlider','pitchEnvAmountSlider','pitchEnvDecaySlider'].forEach(id => {
+  document.getElementById(id).addEventListener('input', savePitchControlsFromInputs);
 });
 
 document.getElementById('muteBtn').addEventListener('click', () => {
@@ -8243,6 +8355,8 @@ function importMidi(buffer, sourceFileName = '') {
         waveType: 'sine',
         waveData: null,
         harmonics: [1,0,0,0,0,0,0,0],
+        detune: 0,
+        pitchEnv: { amount: 0, decay: 0.08 },
         adsr: {a:0.01, d:0.1, s:0.7, r:0.2},
         pan: 64,
         volume: 0,
@@ -8685,7 +8799,7 @@ async function renderTrackToBuffer(track, offlineCtx) {
     pan.connect(offlineCtx.destination);
 
     if (track.waveType === 'sampler') {
-      const src = createSamplerSource(offlineCtx, track, note.pitch, duration);
+      const src = createSamplerSource(offlineCtx, track, note.pitch, duration, now);
       if (src) {
         src.connect(env);
         src.start(now);
@@ -8693,7 +8807,7 @@ async function renderTrackToBuffer(track, offlineCtx) {
         return;
       }
     } else if (track.waveType === 'noise') {
-      const noise = createNoiseLayer(offlineCtx, note.pitch, noteEnd - now + 0.1, !!track.noisePitchFilter, 1);
+      const noise = createNoiseLayer(offlineCtx, note.pitch, noteEnd - now + 0.1, !!track.noisePitchFilter, 1, track, now);
       noise.output.connect(env);
       noise.source.start(now);
       noise.source.stop(noteEnd + 0.1);
@@ -8702,6 +8816,7 @@ async function renderTrackToBuffer(track, offlineCtx) {
       // 웨이브테이블 (기본)
       osc.setPeriodicWave(wtMakeWave(offlineCtx, track));
       osc.frequency.value = pitchToHz(note.pitch);
+      applyOscPitchAutomation(osc, track, now);
       const oscGain = offlineCtx.createGain();
       const noiseMix = (track.noiseMix || 0) / 100;
       oscGain.gain.value = 1 - noiseMix * 0.5;
@@ -8713,7 +8828,7 @@ async function renderTrackToBuffer(track, offlineCtx) {
 
       // 노이즈 믹스
       if (noiseMix > 0) {
-        const noise = createNoiseLayer(offlineCtx, note.pitch, noteEnd - now + 0.1, !!track.noisePitchFilter, noiseMix);
+        const noise = createNoiseLayer(offlineCtx, note.pitch, noteEnd - now + 0.1, !!track.noisePitchFilter, noiseMix, track, now);
         noise.output.connect(env);
         noise.source.start(now);
         noise.source.stop(noteEnd + 0.1);
