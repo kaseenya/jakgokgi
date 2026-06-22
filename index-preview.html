@@ -4136,6 +4136,8 @@ function previewNote(pitch, durationBeats) {
   const ctx = getAudioCtx();
   if (ctx.state === 'suspended') ctx.resume();
   const env = ctx.createGain();
+  const panNode = ctx.createStereoPanner();
+  panNode.pan.value = ((track.pan || 64) - 64) / 63;
   const now = ctx.currentTime;
   const vol = dbToGain(getTrackVolumeDb(track));
 
@@ -4144,11 +4146,17 @@ function previewNote(pitch, durationBeats) {
   const dcy = Math.max(0.001, track.adsr ? track.adsr.d : 0.1);
   const sus = track.adsr ? track.adsr.s : 0.7;
   const rel = Math.max(0.001, track.adsr ? track.adsr.r : 0.2);
-  // 노트 길이 - beats가 주어지면 BPM 기준으로 변환, 없으면 0.5초
+  // 노트 길이 - beats가 주어지면 BPM 기준으로 변환,
+  // 없으면 엔벨로프(attack+decay)가 충분히 전개되도록 길이를 잡는다.
+  // (고정 0.5초로 두면 긴 attack/decay를 가진 음색이 미리듣기에서 잘려
+  //  실제 재생과 다른 소리로 들린다)
   const bps = (project.bpm || 120) / 60;
-  const duration = durationBeats ? Math.max(0.05, durationBeats / bps) : 0.5;
+  const duration = durationBeats
+    ? Math.max(0.05, durationBeats / bps)
+    : Math.max(0.6, atk + dcy + 0.4);
 
-  const atkEnd = now + atk;
+  // attack이 노트 길이보다 길면 시점이 역전되지 않도록 클램프한다.
+  const atkEnd = now + Math.min(atk, duration);
   const dcyEnd = now + Math.min(atk + dcy, duration);
   const relStart = Math.max(dcyEnd, now + duration - rel);
   const noteEnd = relStart + rel;
@@ -4159,7 +4167,8 @@ function previewNote(pitch, durationBeats) {
   env.gain.linearRampToValueAtTime(vol * sus, dcyEnd);
   env.gain.setValueAtTime(vol * sus, relStart);
   env.gain.linearRampToValueAtTime(0, noteEnd);
-  env.connect(getMasterDest(ctx));
+  env.connect(panNode);
+  panNode.connect(getMasterDest(ctx));
 
   if (track.waveType === 'sampler') {
     const src = createSamplerSource(ctx, track, pitch, duration, now);
@@ -4527,7 +4536,8 @@ function scheduleNote(ctx2, track, note, bps) {
 
   panNode.pan.value = panVal;
   // ADSR 타이밍: atk+dcy가 duration보다 길면 duration에 맞춰 잘라냄
-  const atkEnd = now + atk;
+  // (attack이 노트보다 길어도 시점이 역전되지 않도록 클램프)
+  const atkEnd = now + Math.min(atk, duration);
   const dcyEnd = now + Math.min(atk + dcy, duration);
   // 릴리즈 시작 = 노트 끝에서 rel만큼 앞 (단, atk+dcy 이후여야 함)
   const relStart = Math.max(dcyEnd, now + duration - rel);
@@ -8987,7 +8997,7 @@ async function renderTrackToBuffer(track, offlineCtx) {
     const env = offlineCtx.createGain();
     const pan = offlineCtx.createStereoPanner();
     pan.pan.value = panVal;
-    const atkEnd = now + atk;
+    const atkEnd = now + Math.min(atk, duration);
     const dcyEnd = now + Math.min(atk + dcy, duration);
     const relStart = Math.max(dcyEnd, now + duration - rel);
     const noteEnd = relStart + rel;
