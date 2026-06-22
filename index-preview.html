@@ -6181,32 +6181,71 @@ document.getElementById('volSlider').addEventListener('input', e => {
 });
 
 function installSettingsRangeTouchGuard() {
-  const content = document.querySelector('#settingsScreen .settings-content');
-  if (!content) return;
-  let startX = 0;
-  let startY = 0;
-  let suppressUntil = 0;
+  const HOLD_MS = 220;
+  const MOVE_PX = 8;
+  const states = new WeakMap();
 
-  content.addEventListener('touchstart', e => {
-    if (!e.touches || e.touches.length !== 1) return;
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-  }, { passive: true });
-
-  content.addEventListener('touchmove', e => {
-    if (!e.touches || e.touches.length !== 1) return;
-    const dx = Math.abs(e.touches[0].clientX - startX);
-    const dy = Math.abs(e.touches[0].clientY - startY);
-    if (dy > 8 && dy > dx * 1.2) {
-      suppressUntil = performance.now() + 350;
-    }
-  }, { passive: true });
+  const setSliderFromX = (slider, clientX) => {
+    const rect = slider.getBoundingClientRect();
+    const min = parseFloat(slider.min || '0');
+    const max = parseFloat(slider.max || '100');
+    const step = parseFloat(slider.step || '1');
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / Math.max(1, rect.width)));
+    let value = min + (max - min) * ratio;
+    if (Number.isFinite(step) && step > 0) value = Math.round(value / step) * step;
+    value = Math.max(min, Math.min(max, value));
+    slider.value = String(value);
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+  };
 
   document.querySelectorAll('#settingsScreen input[type="range"]').forEach(slider => {
     slider.addEventListener('pointerdown', e => {
-      if (e.pointerType === 'touch' && performance.now() < suppressUntil) {
+      if (e.pointerType !== 'touch') return;
+      const state = {
+        value: slider.value,
+        armed: false,
+        canceled: false,
+        x: e.clientX,
+        y: e.clientY,
+        timer: null
+      };
+      state.timer = setTimeout(() => {
+        if (!state.canceled) {
+          state.armed = true;
+          setSliderFromX(slider, state.x);
+        }
+      }, HOLD_MS);
+      states.set(slider, state);
+    }, true);
+
+    slider.addEventListener('pointermove', e => {
+      const state = states.get(slider);
+      if (!state || e.pointerType !== 'touch') return;
+      if (!state.armed) {
+        if (Math.hypot(e.clientX - state.x, e.clientY - state.y) > MOVE_PX) {
+          state.canceled = true;
+          if (state.timer) clearTimeout(state.timer);
+        }
+        return;
+      }
+      e.preventDefault();
+      setSliderFromX(slider, e.clientX);
+    }, true);
+
+    const clearState = () => {
+      const state = states.get(slider);
+      if (state && state.timer) clearTimeout(state.timer);
+      states.delete(slider);
+    };
+    slider.addEventListener('pointerup', clearState, true);
+    slider.addEventListener('pointercancel', clearState, true);
+
+    slider.addEventListener('input', e => {
+      const state = states.get(slider);
+      if (state && !state.armed) {
+        slider.value = state.value;
         e.preventDefault();
-        e.stopPropagation();
+        e.stopImmediatePropagation();
       }
     }, true);
   });
