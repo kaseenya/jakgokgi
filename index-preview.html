@@ -2970,6 +2970,36 @@
 <div class="settings-label ex-style-036">기준 음 (이 샘플의 원래 피치)</div>
 <select class="ex-style-037" id="samplerRootNote"></select>
 </div>
+<div class="settings-group">
+<div class="settings-label">Synth Pitch</div>
+<div class="slider-row">
+<div class="slider-top"><span>A Pitch</span><span id="wtPitchAVal">0 st</span></div>
+<input id="wtPitchASlider" max="24" min="-24" step="1" type="range" value="0"/>
+</div>
+<div class="slider-row">
+<div class="slider-top"><span>B Pitch</span><span id="wtPitchBVal">0 st</span></div>
+<input id="wtPitchBSlider" max="24" min="-24" step="1" type="range" value="0"/>
+</div>
+<div class="slider-row">
+<div class="slider-top"><span>Detune</span><span id="detuneVal">0 ct</span></div>
+<input id="detuneSlider" max="1200" min="-1200" step="1" type="range" value="0"/>
+</div>
+<div class="slider-row">
+<div class="slider-top"><span>Unison</span><span id="unisonVal">1 voice</span></div>
+<input id="unisonSlider" max="10" min="1" step="1" type="range" value="1"/>
+</div>
+</div>
+<div class="settings-group">
+<div class="settings-label">Pitch Envelope</div>
+<div class="slider-row">
+<div class="slider-top"><span>Drop</span><span id="pitchEnvAmountVal">0 st</span></div>
+<input id="pitchEnvAmountSlider" max="48" min="0" step="1" type="range" value="0"/>
+</div>
+<div class="slider-row">
+<div class="slider-top"><span>Decay</span><span id="pitchEnvDecayVal">80ms</span></div>
+<input id="pitchEnvDecaySlider" max="1" min="0.005" step="0.005" type="range" value="0.08"/>
+</div>
+</div>
 <div class="settings-group" id="lfoGroup">
 <div class="settings-label">LFO</div>
 <div class="ex-style-023">
@@ -3019,25 +3049,6 @@
 <input class="adsr-slider" id="adsrR" max="4" min="0" step="0.01" type="range" value="0.2"/>
 <div class="adsr-val" contenteditable="true" id="adsrRVal" inputmode="decimal">200ms</div>
 </div>
-</div>
-</div>
-<div class="settings-group">
-<div class="settings-label">Pitch</div>
-<div class="slider-row">
-<div class="slider-top"><span>Detune</span><span id="detuneVal">0 ct</span></div>
-<input id="detuneSlider" max="1200" min="-1200" step="1" type="range" value="0"/>
-</div>
-<div class="slider-row">
-<div class="slider-top"><span>Drop</span><span id="pitchEnvAmountVal">0 st</span></div>
-<input id="pitchEnvAmountSlider" max="48" min="0" step="1" type="range" value="0"/>
-</div>
-<div class="slider-row">
-<div class="slider-top"><span>Decay</span><span id="pitchEnvDecayVal">80ms</span></div>
-<input id="pitchEnvDecaySlider" max="1" min="0.005" step="0.005" type="range" value="0.08"/>
-</div>
-<div class="slider-row">
-<div class="slider-top"><span>Unison</span><span id="unisonVal">1 voice</span></div>
-<input id="unisonSlider" max="10" min="1" step="1" type="range" value="1"/>
 </div>
 </div>
 <div class="settings-group">
@@ -3381,6 +3392,12 @@ function getTrackUnison(track) {
   return Number.isFinite(unison) ? Math.max(1, Math.min(10, Math.round(unison))) : 1;
 }
 
+function getWTPitchSemis(track, slot) {
+  const key = slot === 'A' ? 'wtPitchA' : 'wtPitchB';
+  const value = Number(track && track[key]);
+  return Number.isFinite(value) ? Math.max(-24, Math.min(24, Math.round(value))) : 0;
+}
+
 function getUnisonVoiceSpecs(track) {
   const count = getTrackUnison(track);
   if (count <= 1) return [{ detune: 0, pan: 0 }];
@@ -3411,43 +3428,51 @@ function applyOscPitchAutomation(osc, track, startTime, extraDetune = 0) {
 
 function startWavetableVoices(ctx, track, pitch, env, startTime, stopTime, lfoDuration, activeList) {
   const specs = getUnisonVoiceSpecs(track);
-  const wave = wtMakeWave(ctx, track);
+  const morph = (track.wtMorph || 0) / 100;
+  const waves = {
+    A: wtDataToPeriodicWave(ctx, wtGetSlotData(track, 'A')),
+    B: wtDataToPeriodicWave(ctx, wtGetSlotData(track, 'B'))
+  };
+  const slotGains = {
+    A: Math.max(0, Math.min(1, 1 - morph)),
+    B: Math.max(0, Math.min(1, morph))
+  };
   const noiseMix = (track.noiseMix || 0) / 100;
   const gainPerVoice = (1 - noiseMix * 0.5) / specs.length;
   const oscs = [];
   const lfoNodes = [];
 
   specs.forEach(spec => {
-    const osc = ctx.createOscillator();
-    const oscGain = ctx.createGain();
-    osc.setPeriodicWave(wave);
-    osc.frequency.value = pitchToHz(pitch);
-    applyOscPitchAutomation(osc, track, startTime, spec.detune);
-    oscGain.gain.value = gainPerVoice;
-    osc.connect(oscGain);
-
+    const voiceOutput = specs.length > 1 ? ctx.createStereoPanner() : ctx.createGain();
     if (specs.length > 1) {
-      const voicePan = ctx.createStereoPanner();
-      voicePan.pan.value = spec.pan;
-      oscGain.connect(voicePan);
-      voicePan.connect(env);
-    } else {
-      oscGain.connect(env);
+      voiceOutput.pan.value = spec.pan;
     }
+    voiceOutput.connect(env);
 
-    osc.start(startTime);
-    osc.stop(stopTime);
-    oscs.push(osc);
-    if (activeList) activeList.push({osc, env});
+    ['A', 'B'].forEach(slot => {
+      if (slotGains[slot] <= 0) return;
+      const osc = ctx.createOscillator();
+      const oscGain = ctx.createGain();
+      osc.setPeriodicWave(waves[slot]);
+      osc.frequency.value = pitchToHz(pitch);
+      applyOscPitchAutomation(osc, track, startTime, spec.detune + getWTPitchSemis(track, slot) * 100);
+      oscGain.gain.value = gainPerVoice * slotGains[slot];
+      osc.connect(oscGain);
+      oscGain.connect(voiceOutput);
+      osc.start(startTime);
+      osc.stop(stopTime);
+      oscs.push(osc);
+      if (activeList) activeList.push({osc, env});
 
-    const lfoTarget = track.lfo && track.lfo.target;
-    if (lfoTarget === 'pitch' || lfoTarget === 'morph') {
-      const lfoNode = connectLFO(ctx, track, osc, env, startTime, lfoDuration);
-      if (lfoNode) {
-        lfoNodes.push(lfoNode);
-        if (activeList) activeList.push({osc: lfoNode, env});
+      const lfoTarget = track.lfo && track.lfo.target;
+      if (lfoTarget === 'pitch' || lfoTarget === 'morph') {
+        const lfoNode = connectLFO(ctx, track, osc, env, startTime, lfoDuration);
+        if (lfoNode) {
+          lfoNodes.push(lfoNode);
+          if (activeList) activeList.push({osc: lfoNode, env});
+        }
       }
-    }
+    });
   });
 
   if (track.lfo && track.lfo.target === 'volume' && oscs[0]) {
@@ -4024,6 +4049,8 @@ document.getElementById('randomSynthBtn').addEventListener('click', () => {
     r: +(Math.random() * 1.5 + 0.01).toFixed(2),
   };
   track.detune = 0;
+  track.wtPitchA = 0;
+  track.wtPitchB = 0;
   track.pitchEnv = { amount: 0, decay: 0.08 };
   track.unison = 1;
 
@@ -5235,6 +5262,8 @@ function normalizeProjectAfterLoad() {
     // 임포트된 파일의 임의 문자열을 안전하게 정규화
     if (track.name != null) track.name = String(track.name);
     if (track.color != null) track.color = safeColor(track.color);
+    track.wtPitchA = getWTPitchSemis(track, 'A');
+    track.wtPitchB = getWTPitchSemis(track, 'B');
     if (!Number.isFinite(Number(track.detune))) track.detune = 0;
     if (!track.pitchEnv || typeof track.pitchEnv !== 'object') track.pitchEnv = { amount: 0, decay: 0.08 };
     track.pitchEnv.amount = getTrackPitchEnv(track).amount;
@@ -5645,6 +5674,8 @@ document.getElementById('addTrackBtn').addEventListener('click', () => {
     wtMorph: 20,
     wtDataA: null,
     wtDataB: null,
+    wtPitchA: 0,
+    wtPitchB: 0,
     noiseMix: 0,
     noisePitchFilter: false,
     lfo: { target: 'none', rate: 4, depth: 50, wave: 'sine' },
@@ -6057,6 +6088,8 @@ function saveCurrentSettings() {
   const track = project.tracks[currentTrackIdx];
   track.pan = parseInt(document.getElementById('panSlider').value);
   track.volume = parseInt(document.getElementById('volSlider').value, 10);
+  track.wtPitchA = parseInt(document.getElementById('wtPitchASlider').value, 10) || 0;
+  track.wtPitchB = parseInt(document.getElementById('wtPitchBSlider').value, 10) || 0;
   track.detune = parseInt(document.getElementById('detuneSlider').value, 10) || 0;
   track.pitchEnv = {
     amount: parseFloat(document.getElementById('pitchEnvAmountSlider').value) || 0,
@@ -6091,8 +6124,14 @@ function updateVolLabel(v) {
 }
 
 function updatePitchControlDisplay(track) {
+  const pitchA = getWTPitchSemis(track, 'A');
+  const pitchB = getWTPitchSemis(track, 'B');
   const detune = getTrackDetuneCents(track);
   const pitchEnv = getTrackPitchEnv(track);
+  document.getElementById('wtPitchASlider').value = pitchA;
+  document.getElementById('wtPitchAVal').textContent = (pitchA > 0 ? '+' : '') + pitchA + ' st';
+  document.getElementById('wtPitchBSlider').value = pitchB;
+  document.getElementById('wtPitchBVal').textContent = (pitchB > 0 ? '+' : '') + pitchB + ' st';
   document.getElementById('detuneSlider').value = detune;
   document.getElementById('detuneVal').textContent = (detune > 0 ? '+' : '') + detune + ' ct';
   document.getElementById('pitchEnvAmountSlider').value = pitchEnv.amount;
@@ -6107,6 +6146,8 @@ function updatePitchControlDisplay(track) {
 function savePitchControlsFromInputs() {
   if (currentTrackIdx < 0) return;
   const track = project.tracks[currentTrackIdx];
+  track.wtPitchA = parseInt(document.getElementById('wtPitchASlider').value, 10) || 0;
+  track.wtPitchB = parseInt(document.getElementById('wtPitchBSlider').value, 10) || 0;
   track.detune = parseInt(document.getElementById('detuneSlider').value, 10) || 0;
   track.pitchEnv = {
     amount: parseFloat(document.getElementById('pitchEnvAmountSlider').value) || 0,
@@ -6123,7 +6164,7 @@ document.getElementById('panSlider').addEventListener('input', e => {
 document.getElementById('volSlider').addEventListener('input', e => {
   updateVolLabel(parseInt(e.target.value));
 });
-['detuneSlider','pitchEnvAmountSlider','pitchEnvDecaySlider','unisonSlider'].forEach(id => {
+['wtPitchASlider','wtPitchBSlider','detuneSlider','pitchEnvAmountSlider','pitchEnvDecaySlider','unisonSlider'].forEach(id => {
   document.getElementById(id).addEventListener('input', savePitchControlsFromInputs);
 });
 
@@ -8428,6 +8469,8 @@ function importMidi(buffer, sourceFileName = '') {
         waveType: 'sine',
         waveData: null,
         harmonics: [1,0,0,0,0,0,0,0],
+        wtPitchA: 0,
+        wtPitchB: 0,
         detune: 0,
         pitchEnv: { amount: 0, decay: 0.08 },
         unison: 1,
