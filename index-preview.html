@@ -232,8 +232,12 @@
     padding: 12px 16px;
     background: var(--bg2);
     border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
   }
-  .settings-preview-sticky #wavePreviewBtn { margin-bottom: 0; }
+  .settings-preview-sticky #wavePreviewBtn { margin-bottom: 0; flex: 1; width: auto; }
+  .settings-preview-sticky #randomSynthBtn { margin-bottom: 0; flex: 0 0 auto; white-space: nowrap; font-size: 11px; padding: 7px 14px; }
   .settings-group { margin-bottom: 20px; }
   .settings-label { font-size: 10px; color: var(--text3); letter-spacing: 1px; margin-bottom: 8px; text-transform: uppercase; }
   .slot-pitch-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; margin-bottom: 12px; }
@@ -2866,6 +2870,7 @@
 <div class="settings-content">
 <div class="settings-preview-sticky">
 <button class="ex-style-022" id="wavePreviewBtn">▶ 소리 미리듣기 (C4)</button>
+<button class="ex-style-014" id="randomSynthBtn">🎲 랜덤</button>
 </div>
 <div class="settings-group" id="trackControlGroup">
 <div class="settings-label">Track</div>
@@ -2896,7 +2901,6 @@
 <div class="settings-group">
 <div class="ex-style-012">
 <div class="settings-label ex-style-013">Synth</div>
-<button class="ex-style-014" id="randomSynthBtn">🎲 랜덤</button>
 </div>
 <!-- 3D 미리보기 -->
 <canvas class="wt-3d-canvas ex-style-015" height="96" id="wt3dCanvas"></canvas>
