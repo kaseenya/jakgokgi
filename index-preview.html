@@ -2890,6 +2890,10 @@
 <div class="slider-top"><span>Decay</span><span id="pitchEnvDecayVal">80ms</span></div>
 <input id="pitchEnvDecaySlider" max="1" min="0.005" step="0.005" type="range" value="0.08"/>
 </div>
+<div class="slider-row">
+<div class="slider-top"><span>Unison</span><span id="unisonVal">1 voice</span></div>
+<input id="unisonSlider" max="10" min="1" step="1" type="range" value="1"/>
+</div>
 </div>
 <div class="settings-group">
 <div class="ex-style-012">
@@ -3360,8 +3364,28 @@ function getTrackPitchEnv(track) {
   };
 }
 
-function applyOscPitchAutomation(osc, track, startTime) {
-  const detune = getTrackDetuneCents(track);
+function getTrackUnison(track) {
+  const unison = Number(track && track.unison);
+  return Number.isFinite(unison) ? Math.max(1, Math.min(10, Math.round(unison))) : 1;
+}
+
+function getUnisonVoiceSpecs(track) {
+  const count = getTrackUnison(track);
+  if (count <= 1) return [{ detune: 0, pan: 0 }];
+  const maxPos = (count - 1) / 2;
+  const detuneStep = 8;
+  const panWidth = 0.55;
+  return Array.from({ length: count }, (_, i) => {
+    const pos = i - maxPos;
+    return {
+      detune: pos * detuneStep,
+      pan: maxPos > 0 ? (pos / maxPos) * panWidth : 0
+    };
+  });
+}
+
+function applyOscPitchAutomation(osc, track, startTime, extraDetune = 0) {
+  const detune = getTrackDetuneCents(track) + extraDetune;
   const pitchEnv = getTrackPitchEnv(track);
   const detuneParam = osc.detune;
   detuneParam.cancelScheduledValues(startTime);
@@ -3371,6 +3395,58 @@ function applyOscPitchAutomation(osc, track, startTime) {
   } else {
     detuneParam.setValueAtTime(detune, startTime);
   }
+}
+
+function startWavetableVoices(ctx, track, pitch, env, startTime, stopTime, lfoDuration, activeList) {
+  const specs = getUnisonVoiceSpecs(track);
+  const wave = wtMakeWave(ctx, track);
+  const noiseMix = (track.noiseMix || 0) / 100;
+  const gainPerVoice = (1 - noiseMix * 0.5) / specs.length;
+  const oscs = [];
+  const lfoNodes = [];
+
+  specs.forEach(spec => {
+    const osc = ctx.createOscillator();
+    const oscGain = ctx.createGain();
+    osc.setPeriodicWave(wave);
+    osc.frequency.value = pitchToHz(pitch);
+    applyOscPitchAutomation(osc, track, startTime, spec.detune);
+    oscGain.gain.value = gainPerVoice;
+    osc.connect(oscGain);
+
+    if (specs.length > 1) {
+      const voicePan = ctx.createStereoPanner();
+      voicePan.pan.value = spec.pan;
+      oscGain.connect(voicePan);
+      voicePan.connect(env);
+    } else {
+      oscGain.connect(env);
+    }
+
+    osc.start(startTime);
+    osc.stop(stopTime);
+    oscs.push(osc);
+    if (activeList) activeList.push({osc, env});
+
+    const lfoTarget = track.lfo && track.lfo.target;
+    if (lfoTarget === 'pitch' || lfoTarget === 'morph') {
+      const lfoNode = connectLFO(ctx, track, osc, env, startTime, lfoDuration);
+      if (lfoNode) {
+        lfoNodes.push(lfoNode);
+        if (activeList) activeList.push({osc: lfoNode, env});
+      }
+    }
+  });
+
+  if (track.lfo && track.lfo.target === 'volume' && oscs[0]) {
+    const lfoNode = connectLFO(ctx, track, oscs[0], env, startTime, lfoDuration);
+    if (lfoNode) {
+      lfoNodes.push(lfoNode);
+      if (activeList) activeList.push({osc: lfoNode, env});
+    }
+  }
+
+  return { oscs, lfoNodes };
 }
 
 function applySamplerPitchAutomation(src, baseRatio, track, startTime) {
@@ -3937,6 +4013,7 @@ document.getElementById('randomSynthBtn').addEventListener('click', () => {
   };
   track.detune = 0;
   track.pitchEnv = { amount: 0, decay: 0.08 };
+  track.unison = 1;
 
   // LFO 랜덤 (50% 확률로 활성)
   if (Math.random() < 0.5) {
@@ -4043,7 +4120,6 @@ function previewNote(pitch, durationBeats) {
     return;
   }
 
-  const osc = ctx.createOscillator();
   if (track.waveType === 'noise') {
     // NOISE 모드: 피치 필터 선택 가능
     const noise = createNoiseLayer(ctx, pitch, noteEnd - now + 0.05, !!track.noisePitchFilter, 1, track, now);
@@ -4054,18 +4130,8 @@ function previewNote(pitch, durationBeats) {
   }
 
   // wavetable 모드 (기본)
-  osc.setPeriodicWave(wtMakeWave(ctx, track));
-  osc.frequency.value = pitchToHz(pitch);
-  applyOscPitchAutomation(osc, track, now);
-  const oscGain = ctx.createGain();
   const noiseMix = (track.noiseMix || 0) / 100;
-  // wavetable 소리는 (1 - noiseMix), 노이즈는 noiseMix로 믹스
-  oscGain.gain.value = 1 - noiseMix * 0.5; // 노이즈가 있어도 wavetable 소리는 절반 이상 유지
-  osc.connect(oscGain);
-  oscGain.connect(env);
-  osc.start(now);
-  connectLFO(ctx, track, osc, env, now, noteEnd - now);
-  osc.stop(noteEnd + 0.05);
+  startWavetableVoices(ctx, track, pitch, env, now, noteEnd + 0.05, noteEnd - now);
 
   // 노이즈 믹스
   if (noiseMix > 0) {
@@ -4398,7 +4464,6 @@ function scheduleNote(ctx2, track, note, bps) {
   if (nominalStartTime + duration < audioNow - 0.03) return;
   const now = Math.max(nominalStartTime, audioNow + 0.003);
 
-  const osc = ctx2.createOscillator();
   const env = ctx2.createGain();
   const panNode = ctx2.createStereoPanner();
 
@@ -4439,20 +4504,9 @@ function scheduleNote(ctx2, track, note, bps) {
     activeOscs.push({osc: noise.source, env});
   } else {
     // 웨이브테이블 (기본)
-    osc.setPeriodicWave(wtMakeWave(ctx2, track));
-    osc.frequency.value = pitchToHz(note.pitch);
-    applyOscPitchAutomation(osc, track, now);
-    const oscGain = ctx2.createGain();
     const noiseMix = (track.noiseMix || 0) / 100;
-    oscGain.gain.value = 1 - noiseMix * 0.5;
-    osc.connect(oscGain);
-    oscGain.connect(env);
     env.connect(panNode); panNode.connect(getMasterDest(ctx2));
-    osc.start(now);
-    const lfoNode = connectLFO(ctx2, track, osc, env, now, noteEnd - now + 0.05);
-    osc.stop(noteEnd + 0.05);
-    activeOscs.push({osc, env});
-    if (lfoNode) activeOscs.push({osc: lfoNode, env});
+    startWavetableVoices(ctx2, track, note.pitch, env, now, noteEnd + 0.05, noteEnd - now + 0.05, activeOscs);
 
     // 노이즈 믹스
     if (noiseMix > 0) {
@@ -5173,6 +5227,7 @@ function normalizeProjectAfterLoad() {
     if (!track.pitchEnv || typeof track.pitchEnv !== 'object') track.pitchEnv = { amount: 0, decay: 0.08 };
     track.pitchEnv.amount = getTrackPitchEnv(track).amount;
     track.pitchEnv.decay = getTrackPitchEnv(track).decay;
+    track.unison = getTrackUnison(track);
     if (track.prView) {
       track.prView.cellH = Number(track.prView.cellH);
       track.prView.beatW = Number(track.prView.beatW);
@@ -5583,6 +5638,7 @@ document.getElementById('addTrackBtn').addEventListener('click', () => {
     lfo: { target: 'none', rate: 4, depth: 50, wave: 'sine' },
     detune: 0,
     pitchEnv: { amount: 0, decay: 0.08 },
+    unison: 1,
     adsr: {a: 0.01, d: 0.1, s: 0.7, r: 0.2},
     pan: 64,
     volume: 0,
@@ -5994,6 +6050,7 @@ function saveCurrentSettings() {
     amount: parseFloat(document.getElementById('pitchEnvAmountSlider').value) || 0,
     decay: parseFloat(document.getElementById('pitchEnvDecaySlider').value) || 0.08
   };
+  track.unison = parseInt(document.getElementById('unisonSlider').value, 10) || 1;
   // ADSR은 updateAdsrDisplay에서 이미 즉시 반영되므로 여기서는 건드리지 않음
 }
 
@@ -6030,6 +6087,9 @@ function updatePitchControlDisplay(track) {
   document.getElementById('pitchEnvAmountVal').textContent = pitchEnv.amount + ' st';
   document.getElementById('pitchEnvDecaySlider').value = pitchEnv.decay;
   document.getElementById('pitchEnvDecayVal').textContent = Math.round(pitchEnv.decay * 1000) + 'ms';
+  const unison = getTrackUnison(track);
+  document.getElementById('unisonSlider').value = unison;
+  document.getElementById('unisonVal').textContent = unison + (unison === 1 ? ' voice' : ' voices');
 }
 
 function savePitchControlsFromInputs() {
@@ -6040,6 +6100,7 @@ function savePitchControlsFromInputs() {
     amount: parseFloat(document.getElementById('pitchEnvAmountSlider').value) || 0,
     decay: parseFloat(document.getElementById('pitchEnvDecaySlider').value) || 0.08
   };
+  track.unison = parseInt(document.getElementById('unisonSlider').value, 10) || 1;
   updatePitchControlDisplay(track);
   scheduleAutoSave();
 }
@@ -6050,7 +6111,7 @@ document.getElementById('panSlider').addEventListener('input', e => {
 document.getElementById('volSlider').addEventListener('input', e => {
   updateVolLabel(parseInt(e.target.value));
 });
-['detuneSlider','pitchEnvAmountSlider','pitchEnvDecaySlider'].forEach(id => {
+['detuneSlider','pitchEnvAmountSlider','pitchEnvDecaySlider','unisonSlider'].forEach(id => {
   document.getElementById(id).addEventListener('input', savePitchControlsFromInputs);
 });
 
@@ -8357,6 +8418,7 @@ function importMidi(buffer, sourceFileName = '') {
         harmonics: [1,0,0,0,0,0,0,0],
         detune: 0,
         pitchEnv: { amount: 0, decay: 0.08 },
+        unison: 1,
         adsr: {a:0.01, d:0.1, s:0.7, r:0.2},
         pan: 64,
         volume: 0,
@@ -8812,19 +8874,9 @@ async function renderTrackToBuffer(track, offlineCtx) {
       noise.source.start(now);
       noise.source.stop(noteEnd + 0.1);
     } else {
-      const osc = offlineCtx.createOscillator();
       // 웨이브테이블 (기본)
-      osc.setPeriodicWave(wtMakeWave(offlineCtx, track));
-      osc.frequency.value = pitchToHz(note.pitch);
-      applyOscPitchAutomation(osc, track, now);
-      const oscGain = offlineCtx.createGain();
       const noiseMix = (track.noiseMix || 0) / 100;
-      oscGain.gain.value = 1 - noiseMix * 0.5;
-      osc.connect(oscGain);
-      oscGain.connect(env);
-      osc.start(now);
-      connectLFO(offlineCtx, track, osc, env, now, noteEnd - now + 0.1);
-      osc.stop(noteEnd + 0.1);
+      startWavetableVoices(offlineCtx, track, note.pitch, env, now, noteEnd + 0.1, noteEnd - now + 0.1);
 
       // 노이즈 믹스
       if (noiseMix > 0) {
