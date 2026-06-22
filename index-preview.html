@@ -8474,6 +8474,8 @@ function parseMidi(buffer) {
     const openNotes = {}; // key: ch*128+pitch → startTick
     let tick = 0;
     let lastStatus = 0;
+    let trackName = '';   // 0xFF 0x03 트랙 이름
+    let instrName = '';   // 0xFF 0x04 악기 이름 (트랙 이름 없을 때 대체)
 
     while (pos < trackEnd) {
       const delta = readVarLen();
@@ -8512,6 +8514,14 @@ function parseMidi(buffer) {
           const denExp = readU8();
           timeDen = Math.pow(2, denExp);
           readU8(); readU8();
+        } else if (metaType === 0x03 || metaType === 0x04) {
+          const bytes = new Uint8Array(metaLen);
+          for (let k = 0; k < metaLen; k++) bytes[k] = readU8();
+          let text = '';
+          try { text = new TextDecoder('utf-8').decode(bytes).trim(); }
+          catch (_) { text = String.fromCharCode.apply(null, bytes).trim(); }
+          if (metaType === 0x03) { if (!trackName) trackName = text; }
+          else { if (!instrName) instrName = text; }
         } else {
           pos += metaLen;
         }
@@ -8524,6 +8534,7 @@ function parseMidi(buffer) {
     }
     pos = trackEnd;
     if (notes.length > 0) {
+      const baseName = trackName || instrName;
       // 채널별로 분리
       const byChannel = {};
       notes.forEach(n => {
@@ -8532,10 +8543,13 @@ function parseMidi(buffer) {
       });
       const channels = Object.keys(byChannel).sort((a,b) => a-b);
       if (channels.length > 1) {
-        // 여러 채널 → 각각 별도 트랙으로
-        channels.forEach(ch => parsedTracks.push(byChannel[ch]));
+        // 여러 채널 → 각각 별도 트랙으로 (이름 뒤에 채널 번호 표기)
+        channels.forEach(ch => parsedTracks.push({
+          notes: byChannel[ch],
+          name: baseName ? `${baseName} (ch${+ch + 1})` : ''
+        }));
       } else {
-        parsedTracks.push(notes);
+        parsedTracks.push({ notes, name: baseName });
       }
     }
   }
@@ -8557,7 +8571,7 @@ function importMidi(buffer, sourceFileName = '') {
     const tpb = midi.ticksPerBeat;
 
     // 총 마디 수 계산
-    const allNotes = midi.tracks.flat();
+    const allNotes = midi.tracks.flatMap(tr => tr.notes);
     const maxTick = allNotes.reduce((m,n) => Math.max(m, n.startTick + n.lenTick), 0);
     const totalBeatsRaw = maxTick / tpb;
     const bars = Math.max(4, Math.ceil(totalBeatsRaw / midi.timeNum));
@@ -8570,8 +8584,8 @@ function importMidi(buffer, sourceFileName = '') {
     project.theme = getCurrentTheme();
     project.tracks = [];
 
-    midi.tracks.forEach((notes, i) => {
-      const trackNotes = notes.map(n => ({
+    midi.tracks.forEach((tr, i) => {
+      const trackNotes = tr.notes.map(n => ({
         pitch: Math.max(21, Math.min(107, n.pitch)),
         startBeat: n.startTick / tpb,
         lenBeats: Math.max(0.015625, n.lenTick / tpb),
@@ -8579,7 +8593,7 @@ function importMidi(buffer, sourceFileName = '') {
       }));
       project.tracks.push({
         color: TRACK_COLORS[i % TRACK_COLORS.length],
-        name: TRACK_COLORS[i % TRACK_COLORS.length],
+        name: tr.name || '',
         waveType: 'sine',
         waveData: null,
         harmonics: [1,0,0,0,0,0,0,0],
