@@ -4060,11 +4060,26 @@ document.getElementById('randomSynthBtn').addEventListener('click', () => {
     s: +(Math.random()).toFixed(2),
     r: +(Math.random() * 1.5 + 0.01).toFixed(2),
   };
-  track.detune = 0;
-  track.wtPitchA = 0;
-  track.wtPitchB = 0;
-  track.pitchEnv = { amount: 0, decay: 0.08 };
-  track.unison = 1;
+  // 슬롯 피치 오프셋 랜덤 — 대부분 0, 가끔 옥타브/5도로 두꺼운 음색
+  const pitchChoices = [0, 0, 0, 0, -12, -7, -5, 5, 7, 12];
+  track.wtPitchA = pitchChoices[Math.floor(Math.random() * pitchChoices.length)];
+  track.wtPitchB = pitchChoices[Math.floor(Math.random() * pitchChoices.length)];
+
+  // 미세 디튠 랜덤 (±50 cent)
+  track.detune = Math.floor(Math.random() * 101) - 50;
+
+  // 유니즌 랜덤 (50%는 1보이스, 아니면 2~7보이스)
+  track.unison = Math.random() < 0.5 ? 1 : Math.floor(Math.random() * 6) + 2;
+
+  // 피치 엔벨로프 랜덤 (35% 확률로 활성 — 펑/짹 하는 어택)
+  if (Math.random() < 0.35) {
+    track.pitchEnv = {
+      amount: Math.floor(Math.random() * 24) + 1,        // 1~24 반음
+      decay: +(Math.random() * 0.3 + 0.02).toFixed(3)    // 0.02~0.32초
+    };
+  } else {
+    track.pitchEnv = { amount: 0, decay: 0.08 };
+  }
 
   // LFO 랜덤 (50% 확률로 활성)
   if (Math.random() < 0.5) {
