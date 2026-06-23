@@ -5402,6 +5402,7 @@ function applyPRViewState(view) {
 
 function savePRViewState() {
   if (currentTrackIdx < 0 || !project.tracks[currentTrackIdx]) return;
+  if (prViewTrackIdx !== currentTrackIdx) return;
   const track = project.tracks[currentTrackIdx];
   const viewKey = track.drumKit ? 'drumPrView' : 'prView';
   track[viewKey] = {
@@ -6736,6 +6737,7 @@ function updateUndoRedoBtns() {
 }
 
 function openPianoRoll(i) {
+  prViewTrackIdx = -1;
   currentTrackIdx = i;
   const track = project.tracks[i];
   PR.notes = track.notes ? JSON.parse(JSON.stringify(track.notes)) : [];
@@ -6765,6 +6767,7 @@ document.getElementById('prBack').addEventListener('click', () => {
     savePRViewState();
     scheduleAutoSave();
   }
+  prViewTrackIdx = -1;
   renderTrackList();
   showScreen('mainScreen');
   requestAnimationFrame(drawMainProgress);
@@ -6772,6 +6775,7 @@ document.getElementById('prBack').addEventListener('click', () => {
 
 // --- Canvas setup ---
 let prCanvas, prCtx, tlCanvas, tlCtx;
+let prViewTrackIdx = -1;
 
 function initPianoRoll() {
   PR_HISTORY.length = 0;
@@ -6794,6 +6798,7 @@ function initPianoRoll() {
   // 없으면 기존처럼 C4/C5 부근이 보이는 기본값을 사용한다.
   const track = currentTrackIdx >= 0 ? project.tracks[currentTrackIdx] : null;
   applyPRViewState(getPRViewStateForTrack(track));
+  prViewTrackIdx = currentTrackIdx;
   buildKeys();
   syncKeysScroll();
   drawPR();
