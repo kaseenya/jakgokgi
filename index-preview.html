@@ -4172,8 +4172,10 @@ document.getElementById('wtSamplerBtn').addEventListener('click', () => {
 
 function previewNote(pitch, durationBeats) {
   if (currentTrackIdx < 0) return;
-  // 드럼키트 트랙이면 이 음(pitch)에 해당하는 드럼 프리셋 음색으로 교체한다.
-  const track = resolveVoiceTrack(project.tracks[currentTrackIdx], pitch);
+  // 드럼키트 트랙이면 이 행(pitch)에 해당하는 드럼 음색으로 교체하고, 그 드럼의 고유음에서 합성한다.
+  const _voice = resolveDrumVoice(project.tracks[currentTrackIdx], pitch);
+  const track = _voice.track;
+  pitch = _voice.pitch;
   const ctx = getAudioCtx();
   if (ctx.state === 'suspended') ctx.resume();
   const env = ctx.createGain();
@@ -4556,8 +4558,10 @@ function preserveBarsForExistingNotes() {
 }
 
 function scheduleNote(ctx2, track, note, bps) {
-  // 드럼키트 트랙이면 이 노트의 pitch에 해당하는 드럼 프리셋 음색으로 교체.
-  track = resolveVoiceTrack(track, note.pitch);
+  // 드럼키트 트랙이면 이 노트의 행(pitch)에 맞는 드럼 음색으로 교체하고, 그 드럼 고유음에서 합성.
+  const _voice = resolveDrumVoice(track, note.pitch);
+  track = _voice.track;
+  const synthPitch = _voice.pitch;
   const startDelay = (note.startBeat - playbackStartBeat) / bps;
   const duration = note.lenBeats / bps;
   const nominalStartTime = playbackStartTime + startDelay;
@@ -4595,14 +4599,14 @@ function scheduleNote(ctx2, track, note, bps) {
 
   const validTypes2 = ['sine','square','sawtooth','triangle'];
   if (track.waveType === 'sampler') {
-    const src = createSamplerSource(ctx2, track, note.pitch, duration, now);
+    const src = createSamplerSource(ctx2, track, synthPitch, duration, now);
     if (src) {
       src.connect(env); env.connect(panNode); panNode.connect(getMasterDest(ctx2));
       src.start(now); src.stop(noteEnd + 0.05);
       activeOscs.push({osc: src, env});
     }
   } else if (track.waveType === 'noise') {
-    const noise = createNoiseLayer(ctx2, note.pitch, noteEnd - now + 0.05, !!track.noisePitchFilter, 1, track, now);
+    const noise = createNoiseLayer(ctx2, synthPitch, noteEnd - now + 0.05, !!track.noisePitchFilter, 1, track, now);
     noise.output.connect(env); env.connect(panNode); panNode.connect(getMasterDest(ctx2));
     noise.source.start(now); noise.source.stop(noteEnd + 0.05);
     activeOscs.push({osc: noise.source, env});
@@ -4610,11 +4614,11 @@ function scheduleNote(ctx2, track, note, bps) {
     // 웨이브테이블 (기본)
     const noiseMix = (track.noiseMix || 0) / 100;
     env.connect(panNode); panNode.connect(getMasterDest(ctx2));
-    startWavetableVoices(ctx2, track, note.pitch, env, now, noteEnd + 0.05, noteEnd - now + 0.05, activeOscs);
+    startWavetableVoices(ctx2, track, synthPitch, env, now, noteEnd + 0.05, noteEnd - now + 0.05, activeOscs);
 
     // 노이즈 믹스
     if (noiseMix > 0) {
-      const noise = createNoiseLayer(ctx2, note.pitch, noteEnd - now + 0.05, !!track.noisePitchFilter, noiseMix, track, now);
+      const noise = createNoiseLayer(ctx2, synthPitch, noteEnd - now + 0.05, !!track.noisePitchFilter, noiseMix, track, now);
       noise.output.connect(env);
       noise.source.start(now);
       noise.source.stop(noteEnd + 0.05);
@@ -6112,24 +6116,38 @@ const DRUM_PRESET_DEFAULTS = {
   adsr: { a: 0.01, d: 0.1, s: 0.7, r: 0.2 },
 };
 
-// pitch(=GM 드럼 번호) → 프리셋. DRUM_KIT의 note 필드로 인덱싱한다.
-const DRUM_NOTE_MAP = {};
-Object.keys(DRUM_KIT).forEach(k => { DRUM_NOTE_MAP[DRUM_KIT[k].note] = DRUM_KIT[k]; });
+// 드럼키트 모드의 행(pitch) → 드럼 배치.
+// 가장 낮은 드럼(DRUM_KIT_BASE)부터 note 오름차순으로 한 행씩 배정한다.
+// → 피아노롤에서 인접한 행이 그대로 서로 다른 드럼이 된다(트래커/미디 드럼맵 느낌).
+const DRUM_KIT_ORDER = Object.keys(DRUM_KIT).sort((a, b) => DRUM_KIT[a].note - DRUM_KIT[b].note);
+const DRUM_KIT_BASE = DRUM_KIT[DRUM_KIT_ORDER[0]].note; // 36 (가장 낮은 드럼 = kick)
 
-// 드럼키트 트랙(track.drumKit)이면, note.pitch에 해당하는 프리셋의 신스 파라미터로
-// 덮어쓴 "voice" 객체를 만들어 돌려준다. pan/volume/detune 등 트랙 레벨 속성은 복제로 유지된다.
-// drumKit이 아니거나 pitch에 매핑된 드럼이 없으면 트랙 원본을 그대로 반환 → 일반 트랙은 동작 100% 동일.
-function resolveVoiceTrack(track, pitch) {
-  if (!track || !track.drumKit) return track;
-  const preset = DRUM_NOTE_MAP[pitch];
-  if (!preset) return track;
+// 행(pitch)이 어느 드럼인지. 매핑 범위 밖이면 null.
+function drumPresetForPitch(pitch) {
+  const idx = pitch - DRUM_KIT_BASE;
+  if (idx < 0 || idx >= DRUM_KIT_ORDER.length) return null;
+  return DRUM_KIT[DRUM_KIT_ORDER[idx]];
+}
+// 드럼 키 → 그 드럼이 놓이는 행(pitch).
+function drumRowForKey(key) {
+  const idx = DRUM_KIT_ORDER.indexOf(key);
+  return idx < 0 ? DRUM_KIT_BASE : DRUM_KIT_BASE + idx;
+}
+
+// 드럼키트 트랙(track.drumKit)이면 { track: <프리셋 음색 voice>, pitch: <그 드럼 고유음(preset.note)> }를 반환.
+// 각 드럼을 자기 고유음에서 합성하므로 "행만 달라지고 같은 음색이 음정만 바뀌는" 현상 없이 드럼마다 제 소리가 난다.
+// pan/volume/detune 등 트랙 레벨 속성은 복제로 유지. drumKit이 아니거나 매핑 밖의 행이면 원본 그대로 반환 → 일반 트랙은 동작 100% 동일.
+function resolveDrumVoice(track, pitch) {
+  if (!track || !track.drumKit) return { track, pitch };
+  const preset = drumPresetForPitch(pitch);
+  if (!preset) return { track, pitch };
   const v = Object.assign({}, track);
   Object.keys(DRUM_PRESET_DEFAULTS).forEach(field => {
     let val = (field in preset) ? preset[field] : DRUM_PRESET_DEFAULTS[field];
     if (val && typeof val === 'object') val = Object.assign({}, val);
     v[field] = val;
   });
-  return v;
+  return { track: v, pitch: preset.note };
 }
 
 // 프리셋 값을 현재 트랙에 복사한다. 저장/재생/내보내기 로직은 건드리지 않고
@@ -6156,10 +6174,14 @@ document.getElementById('drumPresetSelect').addEventListener('change', e => {
   const key = e.target.value;
   if (!key || currentTrackIdx < 0) return;
   const track = project.tracks[currentTrackIdx];
-  // 키트 모드: 음색은 pitch별 매핑이 담당하므로 트랙에 복사하지 않고, 고른 드럼만 미리듣는다.
-  // 일반 모드: 트랙 전체를 이 드럼 음색으로 설정한 뒤 미리듣는다.
-  if (!track.drumKit) applyDrumPreset(key);
-  previewNote(DRUM_KIT[key].note);
+  if (track.drumKit) {
+    // 키트 모드: 음색은 행별 매핑이 담당. 트랙에 복사하지 않고, 그 드럼이 놓이는 행을 미리듣는다.
+    previewNote(drumRowForKey(key));
+  } else {
+    // 일반 모드: 트랙 전체를 이 드럼 음색으로 설정한 뒤 드럼 고유음에서 미리듣는다.
+    applyDrumPreset(key);
+    previewNote(DRUM_KIT[key].note);
+  }
   // 선택한 옵션이 드롭다운에 그대로 표시되도록 value는 초기화하지 않는다.
 });
 
@@ -9152,8 +9174,10 @@ async function renderTrackToBuffer(srcTrack, offlineCtx) {
   if (notes.length === 0) return;
 
   notes.forEach(note => {
-    // 드럼키트 트랙이면 노트마다 pitch에 맞는 드럼 프리셋 음색으로 교체.
-    const track = resolveVoiceTrack(srcTrack, note.pitch);
+    // 드럼키트 트랙이면 노트마다 행(pitch)에 맞는 드럼 음색으로 교체하고, 그 드럼 고유음에서 합성.
+    const _voice = resolveDrumVoice(srcTrack, note.pitch);
+    const track = _voice.track;
+    const synthPitch = _voice.pitch;
     const now = note.startBeat / bps;
     const duration = note.lenBeats / bps;
     const atk = Math.max(0.001, track.adsr ? track.adsr.a : 0.01);
@@ -9180,7 +9204,7 @@ async function renderTrackToBuffer(srcTrack, offlineCtx) {
     pan.connect(offlineCtx.destination);
 
     if (track.waveType === 'sampler') {
-      const src = createSamplerSource(offlineCtx, track, note.pitch, duration, now);
+      const src = createSamplerSource(offlineCtx, track, synthPitch, duration, now);
       if (src) {
         src.connect(env);
         src.start(now);
@@ -9188,18 +9212,18 @@ async function renderTrackToBuffer(srcTrack, offlineCtx) {
         return;
       }
     } else if (track.waveType === 'noise') {
-      const noise = createNoiseLayer(offlineCtx, note.pitch, noteEnd - now + 0.1, !!track.noisePitchFilter, 1, track, now);
+      const noise = createNoiseLayer(offlineCtx, synthPitch, noteEnd - now + 0.1, !!track.noisePitchFilter, 1, track, now);
       noise.output.connect(env);
       noise.source.start(now);
       noise.source.stop(noteEnd + 0.1);
     } else {
       // 웨이브테이블 (기본)
       const noiseMix = (track.noiseMix || 0) / 100;
-      startWavetableVoices(offlineCtx, track, note.pitch, env, now, noteEnd + 0.1, noteEnd - now + 0.1);
+      startWavetableVoices(offlineCtx, track, synthPitch, env, now, noteEnd + 0.1, noteEnd - now + 0.1);
 
       // 노이즈 믹스
       if (noiseMix > 0) {
-        const noise = createNoiseLayer(offlineCtx, note.pitch, noteEnd - now + 0.1, !!track.noisePitchFilter, noiseMix, track, now);
+        const noise = createNoiseLayer(offlineCtx, synthPitch, noteEnd - now + 0.1, !!track.noisePitchFilter, noiseMix, track, now);
         noise.output.connect(env);
         noise.source.start(now);
         noise.source.stop(noteEnd + 0.1);
