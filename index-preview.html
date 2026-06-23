@@ -401,6 +401,10 @@
   .pr-key.white { background: var(--bg2); color: var(--text3); }
   .pr-key.black { background: #111118; color: var(--text3); }
   .pr-key:active { background: var(--accent) !important; }
+  .pr-key.drum-key {
+    font-size: 9px; font-weight: 600; color: var(--text);
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  }
 
   .pr-scroll { flex: 1; overflow: hidden; position: relative; }
   #prCanvas { position: absolute; top: 0; left: 0; cursor: crosshair; touch-action: none; }
@@ -5290,6 +5294,7 @@ function applyPRViewState(view) {
   PR.beatW = Math.max(20, Math.min(400, Number.isFinite(view.beatW) ? view.beatW : def.beatW));
   PR.scrollX = Math.max(-8, Number.isFinite(view.scrollX) ? view.scrollX : def.scrollX);
   PR.scrollY = Math.max(0, Number.isFinite(view.scrollY) ? view.scrollY : def.scrollY);
+  fitDrumView();  // 드럼 모드면 C2~B2 한 옥타브에 맞게 셀 높이/스크롤 강제
   clampScroll();  // 저장된 뷰가 A0 아래로 내려가 있던 경우 보정
 }
 
@@ -6134,6 +6139,33 @@ function drumRowForKey(key) {
   const idx = DRUM_KIT_ORDER.indexOf(key);
   return idx < 0 ? DRUM_KIT_BASE : DRUM_KIT_BASE + idx;
 }
+// 행(pitch) → 드럼 키. 매핑 밖이면 null.
+function drumKeyForPitch(pitch) {
+  const idx = pitch - DRUM_KIT_BASE;
+  return (idx < 0 || idx >= DRUM_KIT_ORDER.length) ? null : DRUM_KIT_ORDER[idx];
+}
+
+// 드럼키트 모드에서 피아노롤에 보여줄 음역: C2(36) ~ B2(47) 한 옥타브.
+const DRUM_VIEW_TOP_PITCH = 47;     // B2 (맨 위)
+const DRUM_VIEW_BOTTOM_PITCH = 36;  // C2 (맨 아래)
+const DRUM_VIEW_ROWS = DRUM_VIEW_TOP_PITCH - DRUM_VIEW_BOTTOM_PITCH + 1; // 12
+// 건반 라벨에 쓸 짧은 드럼 이름.
+const DRUM_LABELS = {
+  kick:'Kick', rim:'Rim', snare:'Snare', clap:'Clap', hatClosed:'Hat C',
+  tomLow:'Tom L', hatOpen:'Hat O', tomHigh:'Tom H', cowbell:'Cowbell'
+};
+
+// 현재 피아노롤 트랙이 드럼키트 모드인지.
+function prDrumKitActive() {
+  return currentTrackIdx >= 0 && project.tracks[currentTrackIdx] && !!project.tracks[currentTrackIdx].drumKit;
+}
+// 드럼 모드면 12행(C2~B2)이 뷰 높이에 꼭 맞게 셀 높이를 잡고 세로 스크롤을 고정한다.
+function fitDrumView() {
+  if (!prDrumKitActive() || !prCanvas) return false;
+  PR.cellH = Math.max(8, Math.min(80, Math.floor(prCanvas.height / DRUM_VIEW_ROWS)));
+  PR.scrollY = (107 - DRUM_VIEW_TOP_PITCH) * PR.cellH; // B2를 맨 위로
+  return true;
+}
 
 // 드럼키트 트랙(track.drumKit)이면 { track: <프리셋 음색 voice>, pitch: <그 드럼 고유음(preset.note)> }를 반환.
 // 각 드럼을 자기 고유음에서 합성하므로 "행만 달라지고 같은 음색이 음정만 바뀌는" 현상 없이 드럼마다 제 소리가 난다.
@@ -6629,12 +6661,18 @@ function totalBeats() {
 function buildKeys() {
   const inner = document.getElementById('prKeysInner');
   inner.innerHTML = '';
+  const isDrum = prDrumKitActive();
   for (let p = 107; p >= 21; p--) {
     const div = document.createElement('div');
     div.className = 'pr-key ' + (isBlack(p) ? 'black' : 'white');
     div.style.height = PR.cellH + 'px';
-    // cellH가 충분히 크면 모든 건반에 음이름 표시
-    if (PR.cellH >= 14) {
+    if (isDrum) {
+      // 드럼 모드: 드럼이 매핑된 행은 드럼 이름, 그 외는 음이름.
+      const dk = drumKeyForPitch(p);
+      div.textContent = dk ? DRUM_LABELS[dk] : pitchName(p);
+      if (dk) div.classList.add('drum-key');
+    } else if (PR.cellH >= 14) {
+      // cellH가 충분히 크면 모든 건반에 음이름 표시
       div.textContent = pitchName(p);
     } else {
       div.textContent = p % 12 === 0 ? pitchName(p) : '';
@@ -6683,6 +6721,15 @@ function drawPR() {
   const theme = getCanvasTheme();
   prCtx.clearRect(0, 0, W, H);
 
+  // 드럼 모드: C2~B2 한 옥타브가 뷰에 꼭 맞도록 셀 높이/스크롤 고정 (세로 줌·리사이즈 무력화).
+  const isDrum = prDrumKitActive();
+  if (isDrum) {
+    const prevCellH = PR.cellH;
+    fitDrumView();
+    if (PR.cellH !== prevCellH) buildKeys();  // 셀 높이 바뀌면 건반 재생성(내부에서 syncKeysScroll)
+    else syncKeysScroll();                    // 아니면 고정된 scrollY로 키 위치만 재동기화
+  }
+
   const totalP = 87; // 107 - 21 + 1
   const tb = totalBeats();
 
@@ -6696,6 +6743,8 @@ function drawPR() {
 
   // Background rows
   for (let p = 107; p >= 21; p--) {
+    // 드럼 모드에선 표시 음역(C2~B2) 밖의 행은 그리지 않는다 (반올림으로 살짝 비치는 것 방지).
+    if (isDrum && (p > DRUM_VIEW_TOP_PITCH || p < DRUM_VIEW_BOTTOM_PITCH)) continue;
     const y = pitchToY(p);
     if (y > H || y + PR.cellH < 0) continue;
     prCtx.fillStyle = isBlack(p) ? theme.rowBlack : theme.rowWhite;
@@ -6841,7 +6890,11 @@ function drawPR() {
         ? (theme.selectedNoteText || theme.noteText || 'rgba(255,255,255,0.92)')
         : (theme.noteText || 'rgba(255,255,255,0.92)');
       prCtx.font = `bold ${Math.min(10, PR.cellH-4)}px Consolas, D2Coding, monospace`;
-      prCtx.fillText(pitchName(n.pitch), x+4, y + PR.cellH - 4);
+      // 드럼 모드면 노트 라벨도 드럼 이름으로(매핑 밖이면 음이름).
+      const noteLabel = isDrum
+        ? (DRUM_LABELS[drumKeyForPitch(n.pitch)] || pitchName(n.pitch))
+        : pitchName(n.pitch);
+      prCtx.fillText(noteLabel, x+4, y + PR.cellH - 4);
     }
     // 리사이즈 핸들 (오른쪽 끝 작은 줄)
     if (w > 12) {
@@ -7366,6 +7419,11 @@ function clampScroll() {
     // 오른쪽: 존재하는 마디(totalBeats) 너머로는 못 넘어가게 제한
     const maxScrollX = Math.max(-8, totalBeats() * PR.beatW - prCanvas.width);
     if (PR.scrollX > maxScrollX) PR.scrollX = maxScrollX;
+  }
+  if (prDrumKitActive() && prCanvas) {
+    // 드럼 모드: C2~B2 한 옥타브만 보이도록 세로 스크롤을 밴드 상단(B2)에 고정.
+    PR.scrollY = (107 - DRUM_VIEW_TOP_PITCH) * PR.cellH;
+    return;
   }
   PR.scrollY = Math.max(0, PR.scrollY);
   if (prCanvas) {
