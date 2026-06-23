@@ -5394,18 +5394,27 @@ function applyPRViewState(view) {
   PR.beatW = Math.max(20, Math.min(400, Number.isFinite(view.beatW) ? view.beatW : def.beatW));
   PR.scrollX = Math.max(-8, Number.isFinite(view.scrollX) ? view.scrollX : def.scrollX);
   PR.scrollY = Math.max(0, Number.isFinite(view.scrollY) ? view.scrollY : def.scrollY);
-  fitDrumView();  // 드럼 모드면 C2~B2 한 옥타브에 맞게 셀 높이/스크롤 강제
-  clampScroll();  // 저장된 뷰가 A0 아래로 내려가 있던 경우 보정
+  // 드럼 트랙은 세로 줌을 잠그므로, 저장된 세로 줌과 무관하게 항상 C2~B2 밴드에 맞춘다.
+  // (가로 줌 beatW와 가로 스크롤은 위에서 복원한 값을 유지 → 가로 보기는 트랙별로 기억됨)
+  fitDrumView();
+  clampScroll();  // 드럼 밴드 상단 정렬 / A0 아래로 내려간 경우 보정
 }
 
 function savePRViewState() {
   if (currentTrackIdx < 0 || !project.tracks[currentTrackIdx]) return;
-  project.tracks[currentTrackIdx].prView = {
+  const track = project.tracks[currentTrackIdx];
+  const viewKey = track.drumKit ? 'drumPrView' : 'prView';
+  track[viewKey] = {
     cellH: PR.cellH,
     beatW: PR.beatW,
     scrollX: PR.scrollX,
     scrollY: PR.scrollY
   };
+}
+
+function getPRViewStateForTrack(track) {
+  if (!track) return null;
+  return track.drumKit ? (track.drumPrView || null) : (track.prView || null);
 }
 
 // HTML 특수문자 이스케이프 (innerHTML 주입 방지)
@@ -5449,6 +5458,12 @@ function normalizeProjectAfterLoad() {
       track.prView.beatW = Number(track.prView.beatW);
       track.prView.scrollX = Number(track.prView.scrollX);
       track.prView.scrollY = Number(track.prView.scrollY);
+    }
+    if (track.drumPrView) {
+      track.drumPrView.cellH = Number(track.drumPrView.cellH);
+      track.drumPrView.beatW = Number(track.drumPrView.beatW);
+      track.drumPrView.scrollX = Number(track.drumPrView.scrollX);
+      track.drumPrView.scrollY = Number(track.drumPrView.scrollY);
     }
   });
 }
@@ -6778,7 +6793,7 @@ function initPianoRoll() {
   // 트랙별 피아노롤 보기 상태 복원
   // 없으면 기존처럼 C4/C5 부근이 보이는 기본값을 사용한다.
   const track = currentTrackIdx >= 0 ? project.tracks[currentTrackIdx] : null;
-  applyPRViewState(track && track.prView);
+  applyPRViewState(getPRViewStateForTrack(track));
   buildKeys();
   syncKeysScroll();
   drawPR();
@@ -6885,7 +6900,9 @@ function drawPR() {
   const theme = getCanvasTheme();
   prCtx.clearRect(0, 0, W, H);
 
-  // 드럼 모드: C2~B2 한 옥타브가 뷰에 꼭 맞도록 셀 높이/스크롤 고정 (세로 줌·리사이즈 무력화).
+  // 드럼 모드: 세로 줌을 잠그고 C2~B2 한 옥타브가 항상 뷰를 꽉 채우도록 셀 높이/스크롤을 맞춘다.
+  // (가로 줌 beatW는 건드리지 않으므로 가로 확대/축소는 그대로 동작한다.)
+  // 이렇게 하면 일반 트랙에서 세로로 줄인 줌이 드럼 트랙에 적용돼 "드럼 없는 빈 음역"이 보이는 일이 없다.
   const isDrum = prDrumKitActive();
   if (isDrum) {
     const prevCellH = PR.cellH;
@@ -7496,13 +7513,15 @@ function setupPRTouch() {
       // 두 손가락 사이의 전체 거리 변화율 하나만 사용한다.
       if (pinchStartDistTotal > 10) {
         const zoom = Math.max(0.25, Math.min(4, distTotal / pinchStartDistTotal));
-        const newCellH = Math.max(8, Math.min(80, pinchStartCellH * zoom));
         const newBeatW = Math.max(20, Math.min(400, pinchStartBeatW * zoom));
+        // 드럼 모드는 세로 줌 잠금 — 셀 높이는 그대로 두고(fitDrumView가 관리) 가로만 줌한다.
+        const lockV = prDrumKitActive();
+        const newCellH = lockV ? PR.cellH : Math.max(8, Math.min(80, pinchStartCellH * zoom));
 
         PR.cellH = newCellH;
         PR.beatW = newBeatW;
 
-        PR.scrollY = Math.max(0, (107 - pinchStartPitchAtCenter) * newCellH - pinchCenterY);
+        if (!lockV) PR.scrollY = Math.max(0, (107 - pinchStartPitchAtCenter) * newCellH - pinchCenterY);
         PR.scrollX = Math.max(-8, pinchStartBeatAtCenter * newBeatW - pinchCenterX);
         clampScroll();
 
@@ -7585,7 +7604,7 @@ function clampScroll() {
     if (PR.scrollX > maxScrollX) PR.scrollX = maxScrollX;
   }
   if (prDrumKitActive() && prCanvas) {
-    // 드럼 모드: C2~B2 한 옥타브만 보이도록 세로 스크롤을 밴드 상단(B2)에 고정.
+    // 드럼 모드: 세로 줌 잠금 — C2~B2 밴드가 뷰를 꽉 채우므로 스크롤을 밴드 상단(B2)에 고정.
     PR.scrollY = (107 - DRUM_VIEW_TOP_PITCH) * PR.cellH;
     return;
   }
@@ -7678,6 +7697,7 @@ function clampScroll() {
   function moveKeyPinch(t1, t2) {
     if (!keyPinchMode) startKeyPinch(t1, t2);
     if (keyPinchStartDistY < 10) return;
+    if (prDrumKitActive()) return;  // 드럼 모드는 세로 줌 잠금 — 건반 핀치 무시
 
     const distY = Math.abs(t1.clientY - t2.clientY);
     const curCenterY = (localY(t1.clientY) + localY(t2.clientY)) / 2;
