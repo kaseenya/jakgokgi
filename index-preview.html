@@ -6154,9 +6154,13 @@ function applyDrumPreset(key) {
 
 document.getElementById('drumPresetSelect').addEventListener('change', e => {
   const key = e.target.value;
-  if (!key) return;
-  applyDrumPreset(key);
-  e.target.value = '';  // 같은 프리셋을 다시 고를 수 있게 초기화
+  if (!key || currentTrackIdx < 0) return;
+  const track = project.tracks[currentTrackIdx];
+  // 키트 모드: 음색은 pitch별 매핑이 담당하므로 트랙에 복사하지 않고, 고른 드럼만 미리듣는다.
+  // 일반 모드: 트랙 전체를 이 드럼 음색으로 설정한 뒤 미리듣는다.
+  if (!track.drumKit) applyDrumPreset(key);
+  previewNote(DRUM_KIT[key].note);
+  // 선택한 옵션이 드롭다운에 그대로 표시되도록 value는 초기화하지 않는다.
 });
 
 // 드럼 키트 모드 토글: 켜면 그 트랙은 note.pitch(=GM 드럼번호)로 음마다 다른 드럼이 난다.
