@@ -8916,9 +8916,13 @@ document.getElementById('menuExportCustom').addEventListener('click', () => {
   project.tracks.forEach((track, i) => {
     const row = document.createElement('div');
     row.style.cssText = 'background:var(--bg3);border-radius:8px;padding:12px;border:1px solid var(--border);';
+    const isDrum = !!track.drumKit;
+    const head = isDrum
+      ? `Ch.${i+1} · 🥁 GM 드럼 → MIDI 채널 10 (악기 선택 무시됨)`
+      : `Ch.${i+1} · ${escapeHtml((track.waveType||'sine').toUpperCase())}`;
     row.innerHTML = `
-      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;">Ch.${i+1} · ${escapeHtml((track.waveType||'sine').toUpperCase())}</div>
-      <select data-idx="${i}" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px;font-family:'Consolas, D2Coding, monospace',monospace;font-size:11px;outline:none;">
+      <div style="font-size:10px;color:var(--text3);margin-bottom:8px;">${head}</div>
+      <select data-idx="${i}" ${isDrum ? 'disabled' : ''} style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px;font-family:'Consolas, D2Coding, monospace',monospace;font-size:11px;outline:none;${isDrum ? 'opacity:0.5;' : ''}">
         <option value="0">로딩 중...</option>
       </select>
     `;
@@ -9728,18 +9732,29 @@ function exportMidi(programs) {
   tracks.push(tempoTrack);
 
   // Note tracks
+  // GM 규약상 채널 10(0-indexed 9)은 드럼 전용. 드럼키트 트랙은 채널 9로,
+  // 멜로디 트랙은 채널 9를 피해서 배정한다(드럼 채널에 멜로디가 섞이지 않게).
+  const MELODIC_CHANNELS = [0,1,2,3,4,5,6,7,8,10,11,12,13,14,15];
+  let melodicIdx = 0;
   project.tracks.forEach((track, i) => {
     const notes = track.notes || [];
     if (notes.length === 0) return;
 
-    const ch = i % 16;
+    const isDrum = !!track.drumKit;
+    const ch = isDrum ? 9 : MELODIC_CHANNELS[melodicIdx++ % MELODIC_CHANNELS.length];
     const events = [];
 
     notes.forEach(n => {
+      // 드럼키트 트랙이면 행(pitch) → 그 드럼의 GM 드럼맵 번호(preset.note)로 변환.
+      let pitch = n.pitch;
+      if (isDrum) {
+        const preset = drumPresetForPitch(n.pitch);
+        if (preset) pitch = preset.note;
+      }
       const startTick = Math.max(0, Math.round(n.startBeat * ticksPerBeat));
       const endTick = Math.max(startTick + 1, Math.round((n.startBeat + n.lenBeats) * ticksPerBeat));
-      events.push({tick: startTick, order: 1, data: [0x90|ch, clampMidi(n.pitch, 60), 80]});
-      events.push({tick: endTick, order: 0, data: [0x80|ch, clampMidi(n.pitch, 60), 0]});
+      events.push({tick: startTick, order: 1, data: [0x90|ch, clampMidi(pitch, 60), 80]});
+      events.push({tick: endTick, order: 0, data: [0x80|ch, clampMidi(pitch, 60), 0]});
     });
 
     // 같은 tick에서는 note-off를 note-on보다 먼저 써서 겹침/붙음 오류를 줄인다.
