@@ -5290,6 +5290,7 @@ function applyPRViewState(view) {
   PR.beatW = Math.max(20, Math.min(400, Number.isFinite(view.beatW) ? view.beatW : def.beatW));
   PR.scrollX = Math.max(-8, Number.isFinite(view.scrollX) ? view.scrollX : def.scrollX);
   PR.scrollY = Math.max(0, Number.isFinite(view.scrollY) ? view.scrollY : def.scrollY);
+  clampScroll();  // 저장된 뷰가 A0 아래로 내려가 있던 경우 보정
 }
 
 function savePRViewState() {
@@ -7286,6 +7287,7 @@ function setupPRTouch() {
 
         PR.scrollY = Math.max(0, (107 - pinchStartPitchAtCenter) * newCellH - pinchCenterY);
         PR.scrollX = Math.max(-8, pinchStartBeatAtCenter * newBeatW - pinchCenterX);
+        clampScroll();
 
         buildKeys();
       }
@@ -7366,6 +7368,13 @@ function clampScroll() {
     if (PR.scrollX > maxScrollX) PR.scrollX = maxScrollX;
   }
   PR.scrollY = Math.max(0, PR.scrollY);
+  if (prCanvas) {
+    // 아래쪽: 가장 낮은 음(PR.minPitch = A0) 아래의 빈 공간으로는 못 내려가게 제한.
+    // 그리드 맨 위 행은 pitch 107이므로 전체 높이 = (107 - minPitch + 1)행.
+    const contentH = (107 - PR.minPitch + 1) * PR.cellH;
+    const maxScrollY = Math.max(0, contentH - prCanvas.height);
+    if (PR.scrollY > maxScrollY) PR.scrollY = maxScrollY;
+  }
 }
 
 // 건반 영역 드래그 → 세로 스크롤 / 탭 → 미리듣기 / 2점 핀치 → 세로 줌
@@ -7412,6 +7421,7 @@ function clampScroll() {
       scrollMode = true;
       clearTimeout(holdTimer);
       PR.scrollY = Math.max(0, PR.scrollY + dy * 2);
+      clampScroll();
       syncKeysScroll();
       savePRViewState();
       if (prCtx) drawPR();
@@ -7458,6 +7468,7 @@ function clampScroll() {
 
     PR.cellH = newCellH;
     PR.scrollY = Math.max(0, (107 - keyPinchPitchAtCenter) * newCellH - keyPinchCenterY);
+    clampScroll();
 
     buildKeys();
     syncKeysScroll();
