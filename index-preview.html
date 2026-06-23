@@ -3338,7 +3338,12 @@
 <select class="ex-style-069" id="wavExportMode">
 <option selected="" value="master">마스터 출력</option>
 <option value="tracks">트랙별 출력</option>
+<option value="single">한 트랙만 출력</option>
 </select>
+</div>
+<div id="wavSingleTrackWrap" style="display:none;">
+<div class="ex-style-068">트랙 선택</div>
+<select class="ex-style-069" id="wavSingleTrack"></select>
 </div>
 </div>
 <div class="ex-style-070" id="compressedExportInfo" style="display:none;">
@@ -9215,7 +9220,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.2.1.1<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.2.2<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
     () => {}, '확인', ''
   );
 });
@@ -9740,6 +9745,29 @@ async function exportWavTracks() {
   showExportDoneToast('내보내기 완료!');
 }
 
+async function exportWavSingleTrack(index) {
+  const bps = project.bpm / 60;
+  const { sampleRate, bitDepth } = getWavExportOptions();
+  const track = project.tracks[index];
+  if (!track || !track.notes || track.notes.length === 0) {
+    showConfirm('선택한 트랙에 노트가 없어요.', () => {}, '확인', '');
+    return;
+  }
+  let endBeat = 0;
+  track.notes.forEach(n => { endBeat = Math.max(endBeat, n.startBeat + n.lenBeats); });
+  const tail = (track.adsr ? track.adsr.r : 0.2) + 0.1;
+  const totalSec = endBeat / bps + tail;
+  const offlineCtx = new OfflineAudioContext(2, Math.ceil(sampleRate * totalSec), sampleRate);
+  await renderTrackToBuffer(track, offlineCtx);
+  const rendered = await offlineCtx.startRendering();
+  const clipped = preventClippingBuffer(rendered, 0.98);
+  const buffer = clipped.buffer;
+  const blob = encodeWav(buffer, bitDepth);
+  const safeName = (track.name || `ch${index + 1}`).replace(/[\\/:*?"<>|]/g, '_');
+  downloadBlob(blob, `${project.name || '프로젝트'}_${safeName}.wav`);
+  showExportDoneToast('내보내기 완료!');
+}
+
 
 // ============================================================
 // UNIFIED AUDIO EXPORT UI
@@ -9766,6 +9794,29 @@ document.getElementById('audioExportFormat').addEventListener('change', e => {
   document.getElementById('compressedExportInfo').style.display = isWav ? 'none' : 'block';
 });
 
+// 한 트랙만 출력용 트랙 목록 채우기
+function populateWavSingleTrackSelect() {
+  const sel = document.getElementById('wavSingleTrack');
+  const prev = sel.value;
+  sel.innerHTML = '';
+  project.tracks.forEach((t, i) => {
+    const opt = document.createElement('option');
+    opt.value = String(i);
+    const name = t.name || t.color || `트랙 ${i + 1}`;
+    const label = `${i + 1}. ${name}`;
+    const hasNotes = t.notes && t.notes.length > 0;
+    opt.textContent = hasNotes ? label : `${label} (노트 없음)`;
+    sel.appendChild(opt);
+  });
+  if (prev !== '' && project.tracks[parseInt(prev)]) sel.value = prev;
+}
+
+document.getElementById('wavExportMode').addEventListener('change', e => {
+  const isSingle = e.target.value === 'single';
+  if (isSingle) populateWavSingleTrackSelect();
+  document.getElementById('wavSingleTrackWrap').style.display = isSingle ? 'block' : 'none';
+});
+
 document.getElementById('menuExportAudio').addEventListener('click', () => {
   const hasNotes = project.tracks.some(t => t.notes && t.notes.length > 0);
   if (!hasNotes) {
@@ -9774,6 +9825,9 @@ document.getElementById('menuExportAudio').addEventListener('click', () => {
     return;
   }
   resetAudioExportProgress();
+  if (document.getElementById('wavExportMode').value === 'single') {
+    populateWavSingleTrackSelect();
+  }
   document.getElementById('audioExportOverlay').style.display = 'flex';
   closeMenu();
 });
@@ -9812,6 +9866,14 @@ document.getElementById('audioExportStart').addEventListener('click', async () =
       if (mode === 'master') {
         setAudioExportProgress(20, '마스터 WAV 렌더링 중...');
         await exportWavMaster();
+      } else if (mode === 'single') {
+        const idx = parseInt(document.getElementById('wavSingleTrack').value);
+        if (isNaN(idx) || !project.tracks[idx]) {
+          setAudioExportProgress(0, '트랙을 선택해주세요.');
+          return;
+        }
+        setAudioExportProgress(20, '트랙 WAV 렌더링 중...');
+        await exportWavSingleTrack(idx);
       } else {
         setAudioExportProgress(20, '트랙별 WAV 렌더링 중...');
         await exportWavTracks();
