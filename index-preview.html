@@ -7556,10 +7556,31 @@ function setupPRTouch() {
 
   prCanvas.addEventListener('wheel', e => {
     e.preventDefault();
-    PR.scrollX += e.deltaX;
-    PR.scrollY += e.deltaY;
-    clampScroll();
-    syncKeysScroll();
+    if (e.ctrlKey || e.metaKey) {
+      const rect = prCanvas.getBoundingClientRect();
+      const scaleX = prCanvas.width / rect.width;
+      const scaleY = prCanvas.height / rect.height;
+      const cx = (e.clientX - rect.left) * scaleX;
+      const cy = (e.clientY - rect.top) * scaleY;
+      const beatAtCursor = xToBeat(cx);
+      const pitchOffsetAtCursor = (cy + PR.scrollY) / PR.cellH;
+      const zoom = Math.max(0.5, Math.min(2, Math.pow(1.0015, -e.deltaY)));
+      const lockV = prDrumKitActive();
+      const newCellH = lockV ? PR.cellH : Math.max(8, Math.min(80, PR.cellH * zoom));
+      const newBeatW = Math.max(20, Math.min(400, PR.beatW * zoom));
+
+      PR.cellH = newCellH;
+      PR.beatW = newBeatW;
+      if (!lockV) PR.scrollY = Math.max(0, pitchOffsetAtCursor * newCellH - cy);
+      PR.scrollX = Math.max(-8, beatAtCursor * newBeatW - cx);
+      clampScroll();
+      buildKeys();
+    } else {
+      PR.scrollX += e.deltaX;
+      PR.scrollY += e.deltaY;
+      clampScroll();
+      syncKeysScroll();
+    }
     savePRViewState();
     drawPR();
     drawTimeline();
@@ -9194,7 +9215,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.2.1<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.2.1.1<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
     () => {}, '확인', ''
   );
 });
