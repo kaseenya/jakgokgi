@@ -2899,6 +2899,27 @@
 </div>
 </div>
 <div class="settings-group">
+<div class="settings-label">드럼 프리셋</div>
+<div class="ex-style-017">
+<input class="ex-style-018" id="drumKitToggle" type="checkbox"/>
+<label class="ex-style-019" for="drumKitToggle">드럼 키트 모드 (음마다 다른 드럼)</label>
+</div>
+<div class="slider-row">
+<select class="adsr-input" id="drumPresetSelect" style="width:100%;cursor:pointer;">
+<option value="">— 프리셋 선택 —</option>
+<option value="kick">Kick</option>
+<option value="snare">Snare</option>
+<option value="hatClosed">Hat (Closed)</option>
+<option value="hatOpen">Hat (Open)</option>
+<option value="clap">Clap</option>
+<option value="tomLow">Tom (Low)</option>
+<option value="tomHigh">Tom (High)</option>
+<option value="rim">Rim</option>
+<option value="cowbell">Cowbell</option>
+</select>
+</div>
+</div>
+<div class="settings-group">
 <div class="ex-style-012">
 <div class="settings-label ex-style-013">Synth</div>
 </div>
@@ -4151,7 +4172,8 @@ document.getElementById('wtSamplerBtn').addEventListener('click', () => {
 
 function previewNote(pitch, durationBeats) {
   if (currentTrackIdx < 0) return;
-  const track = project.tracks[currentTrackIdx];
+  // 드럼키트 트랙이면 이 음(pitch)에 해당하는 드럼 프리셋 음색으로 교체한다.
+  const track = resolveVoiceTrack(project.tracks[currentTrackIdx], pitch);
   const ctx = getAudioCtx();
   if (ctx.state === 'suspended') ctx.resume();
   const env = ctx.createGain();
@@ -4534,6 +4556,8 @@ function preserveBarsForExistingNotes() {
 }
 
 function scheduleNote(ctx2, track, note, bps) {
+  // 드럼키트 트랙이면 이 노트의 pitch에 해당하는 드럼 프리셋 음색으로 교체.
+  track = resolveVoiceTrack(track, note.pitch);
   const startDelay = (note.startBeat - playbackStartBeat) / bps;
   const duration = note.lenBeats / bps;
   const nominalStartTime = playbackStartTime + startDelay;
@@ -6039,6 +6063,109 @@ function createSamplerSource(ctx, track, pitch, duration, startTime) {
   return src;
 }
 
+// ── 드럼 프리셋 ──────────────────────────────────────────────
+// note = 그 드럼이 울릴 음(=GM 드럼맵 번호). 이번 단계에선 note는 무시(나중에 그리드에서 사용).
+const DRUM_KIT = {
+  kick:    { note:36, waveType:'wavetable', wtTypeA:'sine',     wtMorph:0,  noiseMix:0,
+             pitchEnv:{amount:28, decay:0.055}, adsr:{a:0.002, d:0.32, s:0, r:0.05} },
+
+  snare:   { note:38, waveType:'wavetable', wtTypeA:'triangle', wtMorph:0,  wtPitchA:16,
+             noiseMix:65, noisePitchFilter:false,
+             pitchEnv:{amount:6, decay:0.04},  adsr:{a:0.002, d:0.17, s:0, r:0.04} },
+
+  hatClosed:{note:42, waveType:'noise', noisePitchFilter:false,
+             adsr:{a:0.001, d:0.045, s:0, r:0.02} },
+
+  hatOpen: { note:46, waveType:'noise', noisePitchFilter:false,
+             adsr:{a:0.001, d:0.38,  s:0, r:0.08} },
+
+  clap:    { note:39, waveType:'noise', noisePitchFilter:false,
+             adsr:{a:0.003, d:0.13,  s:0, r:0.05} },
+
+  tomLow:  { note:45, waveType:'wavetable', wtTypeA:'sine', wtMorph:0, noiseMix:0,
+             pitchEnv:{amount:12, decay:0.13}, adsr:{a:0.002, d:0.30, s:0, r:0.06} },
+
+  tomHigh: { note:50, waveType:'wavetable', wtTypeA:'sine', wtMorph:0, noiseMix:0,
+             pitchEnv:{amount:12, decay:0.10}, adsr:{a:0.002, d:0.24, s:0, r:0.06} },
+
+  rim:     { note:37, waveType:'wavetable', wtTypeA:'square', wtMorph:0, wtPitchA:24, noiseMix:0,
+             pitchEnv:{amount:3, decay:0.015}, adsr:{a:0.001, d:0.05, s:0, r:0.02} },
+
+  cowbell: { note:56, waveType:'wavetable', wtTypeA:'square', wtTypeB:'square', wtMorph:50,
+             wtPitchA:17, wtPitchB:24, noiseMix:0,
+             pitchEnv:{amount:0, decay:0.08}, adsr:{a:0.002, d:0.18, s:0, r:0.05} },
+};
+
+// 프리셋 적용 시 다루는 필드와 중립 기본값.
+// 프리셋에 없는 필드는 이 기본값으로 리셋해서, 직전 사운드의 잔여값이 남지 않고
+// 같은 프리셋이면 항상 같은 결과가 나오도록 한다. (note는 다루지 않음)
+const DRUM_PRESET_DEFAULTS = {
+  waveType: 'wavetable',
+  wtTypeA: 'sine',
+  wtTypeB: 'square',
+  wtMorph: 0,
+  wtPitchA: 0,
+  wtPitchB: 0,
+  noiseMix: 0,
+  noisePitchFilter: false,
+  pitchEnv: { amount: 0, decay: 0.08 },
+  adsr: { a: 0.01, d: 0.1, s: 0.7, r: 0.2 },
+};
+
+// pitch(=GM 드럼 번호) → 프리셋. DRUM_KIT의 note 필드로 인덱싱한다.
+const DRUM_NOTE_MAP = {};
+Object.keys(DRUM_KIT).forEach(k => { DRUM_NOTE_MAP[DRUM_KIT[k].note] = DRUM_KIT[k]; });
+
+// 드럼키트 트랙(track.drumKit)이면, note.pitch에 해당하는 프리셋의 신스 파라미터로
+// 덮어쓴 "voice" 객체를 만들어 돌려준다. pan/volume/detune 등 트랙 레벨 속성은 복제로 유지된다.
+// drumKit이 아니거나 pitch에 매핑된 드럼이 없으면 트랙 원본을 그대로 반환 → 일반 트랙은 동작 100% 동일.
+function resolveVoiceTrack(track, pitch) {
+  if (!track || !track.drumKit) return track;
+  const preset = DRUM_NOTE_MAP[pitch];
+  if (!preset) return track;
+  const v = Object.assign({}, track);
+  Object.keys(DRUM_PRESET_DEFAULTS).forEach(field => {
+    let val = (field in preset) ? preset[field] : DRUM_PRESET_DEFAULTS[field];
+    if (val && typeof val === 'object') val = Object.assign({}, val);
+    v[field] = val;
+  });
+  return v;
+}
+
+// 프리셋 값을 현재 트랙에 복사한다. 저장/재생/내보내기 로직은 건드리지 않고
+// 값만 써넣은 뒤, 기존 track→UI 동기화 로직(openSettings)을 그대로 재사용해 슬라이더를 갱신한다.
+function applyDrumPreset(key) {
+  if (currentTrackIdx < 0) return;
+  const preset = DRUM_KIT[key];
+  if (!preset) return;
+  const track = project.tracks[currentTrackIdx];
+  Object.keys(DRUM_PRESET_DEFAULTS).forEach(field => {
+    let val = (field in preset) ? preset[field] : DRUM_PRESET_DEFAULTS[field];
+    // pitchEnv/adsr 같은 객체는 얕은 복제로 프리셋 원본 공유를 막는다.
+    if (val && typeof val === 'object') val = Object.assign({}, val);
+    track[field] = val;
+  });
+  // 모든 슬라이더를 track 값으로 다시 채운다(기존 로직 재사용).
+  openSettings(currentTrackIdx);
+  // openSettings는 ADSR 슬라이더 위치만 맞추므로, 라벨/그래프도 갱신한다.
+  updateAdsrDisplay();
+  scheduleAutoSave();
+}
+
+document.getElementById('drumPresetSelect').addEventListener('change', e => {
+  const key = e.target.value;
+  if (!key) return;
+  applyDrumPreset(key);
+  e.target.value = '';  // 같은 프리셋을 다시 고를 수 있게 초기화
+});
+
+// 드럼 키트 모드 토글: 켜면 그 트랙은 note.pitch(=GM 드럼번호)로 음마다 다른 드럼이 난다.
+document.getElementById('drumKitToggle').addEventListener('change', e => {
+  if (currentTrackIdx < 0) return;
+  project.tracks[currentTrackIdx].drumKit = e.target.checked;
+  scheduleAutoSave();
+});
+
 function openSettings(i) {
   currentTrackIdx = i;
   const track = project.tracks[i];
@@ -6057,6 +6184,9 @@ function openSettings(i) {
     }
     track.waveType = 'wavetable';
   }
+  // 드럼 키트 모드 토글 상태 반영
+  const drumKitToggle = document.getElementById('drumKitToggle');
+  if (drumKitToggle) drumKitToggle.checked = !!track.drumKit;
   // 샘플러 그룹
   document.getElementById('samplerGroup').style.display = track.waveType === 'sampler' ? 'block' : 'none';
   if (track.waveType === 'sampler') {
@@ -9012,12 +9142,14 @@ function preventClippingBuffer(buffer, peakTarget) {
   return { buffer: out, peak, gain };
 }
 
-async function renderTrackToBuffer(track, offlineCtx) {
+async function renderTrackToBuffer(srcTrack, offlineCtx) {
   const bps = project.bpm / 60;
-  const notes = track.notes || [];
+  const notes = srcTrack.notes || [];
   if (notes.length === 0) return;
 
   notes.forEach(note => {
+    // 드럼키트 트랙이면 노트마다 pitch에 맞는 드럼 프리셋 음색으로 교체.
+    const track = resolveVoiceTrack(srcTrack, note.pitch);
     const now = note.startBeat / bps;
     const duration = note.lenBeats / bps;
     const atk = Math.max(0.001, track.adsr ? track.adsr.a : 0.01);
