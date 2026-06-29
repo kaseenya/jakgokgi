@@ -4654,10 +4654,36 @@ function scheduleNote(ctx2, track, note, bps) {
     }
   }
 
-  // 이 노트가 만든 보이스 전부에 논리적 시작 박자를 태깅 (라이브 신스 변경 시 선별 정지에 사용)
+  // 이 노트가 만든 보이스 전부에 논리적 시작 박자 + 종료 시각 + 마스터 연결 노드(panNode)를 태깅한다.
+  //  · startBeat: 라이브 신스 변경 시 선별 정지에 사용
+  //  · endTime/pan: 노트가 끝난 뒤 pruneFinishedVoices()가 노드를 마스터에서 끊어 그래프 누적을 막음
+  //    (이게 없으면 긴 곡에서 gain/pan 노드가 수천 개씩 마스터에 붙은 채로 쌓여 글리치→무음이 된다)
   for (let vi = voiceStartIdx; vi < activeOscs.length; vi++) {
-    if (activeOscs[vi]) activeOscs[vi].startBeat = note.startBeat;
+    if (activeOscs[vi]) {
+      activeOscs[vi].startBeat = note.startBeat;
+      activeOscs[vi].endTime = noteEnd;
+      activeOscs[vi].pan = panNode;
+    }
   }
+}
+
+// 이미 끝난(릴리즈까지 완료된) 보이스의 노드를 마스터에서 끊고 목록에서 제거한다.
+// 정지된 오실레이터는 그래프에서 자동 제거되지만, 그 하류의 gain/pan 노드는 마스터에 연결된 채
+// 계속 처리되므로 긴 곡에서 누적된다 → 주기적으로 끊어 줘야 한다.
+function pruneFinishedVoices() {
+  if (!audioCtx || !activeOscs.length) return;
+  const t = audioCtx.currentTime;
+  const kept = [];
+  for (const e of activeOscs) {
+    // endTime이 없는(구버전/예외) 항목은 안전하게 유지
+    if (e && typeof e.endTime === 'number' && e.endTime + 0.1 <= t) {
+      try { if (e.env) e.env.disconnect(); } catch(_) {}
+      try { if (e.pan) e.pan.disconnect(); } catch(_) {}
+    } else {
+      kept.push(e);
+    }
+  }
+  activeOscs = kept;
 }
 
 function scheduleAhead() {
@@ -4818,6 +4844,7 @@ function startPlayback(soloOnly = false) {
     }
     PR.playPos = getPlaybackBeatFromAudioClock();
     extendProjectBarsForBeat(PR.playPos);
+    pruneFinishedVoices(); // 끝난 보이스 노드를 마스터에서 끊어 긴 곡에서의 그래프 누적(글리치→무음) 방지
     if (PR.playPos >= playbackTotalBeat) {
       // 반복 모드면 맨 처음으로 돌아가 다시 재생 (이전 릴리즈 자연 소멸)
       if (shouldLoopPlayback()) {
@@ -4826,7 +4853,9 @@ function startPlayback(soloOnly = false) {
         //  - scheduledUntilBeat / playbackStartBeat / playbackStartTime을 루프 시작(0박) 기준으로 재설정.
         //    (안 하면 둘째 바퀴부터 scheduleAhead의 "이미 스케줄됨" 가드에 노트가 전부 걸려 무음이 됨)
         const lctx = getAudioCtx();
-        activeOscs = []; // 이전 바퀴 오실레이터는 멈추지 않고 참조만 비워 릴리즈 꼬리를 남김
+        // 이전 바퀴 보이스는 멈추지 않고 릴리즈 꼬리를 남기되, 이미 끝난 노드는 마스터에서 끊어
+        // 그래프 누적을 막는다. (예전엔 참조만 비워서 끝난 노드가 마스터에 붙은 채 쌓였음)
+        pruneFinishedVoices();
         PR.playPos = 0;
         playbackOriginBeat = 0;
         playbackStartBeat = 0;
@@ -9248,7 +9277,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.2.2.1<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.2.2.2<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
     () => {}, '확인', ''
   );
 });
