@@ -5860,10 +5860,10 @@ function copyTrack(i) {
 // ============================================================
 // ADD TRACK
 // ============================================================
-document.getElementById('addTrackBtn').addEventListener('click', () => {
-  project.tracks.push({
-    color: nextTrackColor(),
-    name: '',
+// 새 트랙의 기본 음색 설정. (＋ 버튼과 MIDI 불러오기가 같은 기본값을 쓰도록 한 곳에 모음)
+// color / name / notes 등 트랙별로 달라지는 값은 호출부에서 덮어쓴다.
+function defaultTrackSettings() {
+  return {
     waveType: 'wavetable',
     wtTypeA: 'sine',
     wtTypeB: 'square',
@@ -5882,9 +5882,16 @@ document.getElementById('addTrackBtn').addEventListener('click', () => {
     pan: 64,
     volume: 0,
     muted: false,
-    solo: false,
+    solo: false
+  };
+}
+
+document.getElementById('addTrackBtn').addEventListener('click', () => {
+  project.tracks.push(Object.assign(defaultTrackSettings(), {
+    color: nextTrackColor(),
+    name: '',
     notes: []
-  });
+  }));
   renderTrackList();
 });
 
@@ -6264,6 +6271,30 @@ function drumRowForKey(key) {
 function drumKeyForPitch(pitch) {
   const idx = pitch - DRUM_KIT_BASE;
   return (idx < 0 || idx >= DRUM_KIT_ORDER.length) ? null : DRUM_KIT_ORDER[idx];
+}
+
+// GM 드럼맵(MIDI 채널 10) 노트 번호 → 이 앱의 드럼 키. MIDI 불러오기에서 사용.
+// 이 앱에 없는 타악기는 음색이 가장 비슷한 드럼으로 대체한다.
+const GM_DRUM_TO_KEY = {
+  35:'kick', 36:'kick',
+  37:'rim',
+  38:'snare', 40:'snare',
+  39:'clap',
+  41:'tomLow', 43:'tomLow', 45:'tomLow', 47:'tomLow',
+  42:'hatClosed', 44:'hatClosed', 51:'hatClosed', 54:'hatClosed', 59:'hatClosed',
+  46:'hatOpen', 49:'hatOpen', 52:'hatOpen', 55:'hatOpen', 57:'hatOpen',
+  48:'tomHigh', 50:'tomHigh',
+  53:'cowbell', 56:'cowbell',
+};
+// 매핑에 없는 노트는 고유음이 가장 가까운 드럼으로 보낸다 (어떤 드럼도 버리지 않도록).
+function gmDrumNoteToKey(note) {
+  if (GM_DRUM_TO_KEY[note]) return GM_DRUM_TO_KEY[note];
+  let best = DRUM_KIT_ORDER[0], bestDist = Infinity;
+  DRUM_KIT_ORDER.forEach(k => {
+    const d = Math.abs(DRUM_KIT[k].note - note);
+    if (d < bestDist) { bestDist = d; best = k; }
+  });
+  return best;
 }
 
 // 드럼키트 모드에서 피아노롤에 보여줄 음역: C2(36) ~ B2(47) 한 옥타브.
@@ -8986,10 +9017,11 @@ function parseMidi(buffer) {
         // 여러 채널 → 각각 별도 트랙으로 (이름 뒤에 채널 번호 표기)
         channels.forEach(ch => parsedTracks.push({
           notes: byChannel[ch],
-          name: baseName ? `${baseName} (ch${+ch + 1})` : ''
+          name: baseName ? `${baseName} (ch${+ch + 1})` : '',
+          isDrum: +ch === 9
         }));
       } else {
-        parsedTracks.push({ notes, name: baseName });
+        parsedTracks.push({ notes, name: baseName, isDrum: +channels[0] === 9 });
       }
     }
   }
@@ -9025,30 +9057,26 @@ function importMidi(buffer, sourceFileName = '') {
     project.tracks = [];
 
     midi.tracks.forEach((tr, i) => {
-      const trackNotes = tr.notes.map(n => ({
-        pitch: Math.max(21, Math.min(107, n.pitch)),
-        startBeat: n.startTick / tpb,
-        lenBeats: Math.max(0.015625, n.lenTick / tpb),
-        selected: false
-      }));
-      project.tracks.push({
+      const isDrum = !!tr.isDrum;
+      const trackNotes = tr.notes.map(n => {
+        // 드럼 채널이면 GM 드럼 노트를 이 앱의 드럼 행(pitch)으로 변환한다.
+        const pitch = isDrum
+          ? drumRowForKey(gmDrumNoteToKey(n.pitch))
+          : Math.max(21, Math.min(107, n.pitch));
+        return {
+          pitch,
+          startBeat: n.startTick / tpb,
+          lenBeats: Math.max(0.015625, n.lenTick / tpb),
+          selected: false
+        };
+      });
+      const track = Object.assign(defaultTrackSettings(), {
         color: TRACK_COLORS[i % TRACK_COLORS.length],
-        name: tr.name || '',
-        waveType: 'sine',
-        waveData: null,
-        harmonics: [1,0,0,0,0,0,0,0],
-        wtPitchA: 0,
-        wtPitchB: 0,
-        detune: 0,
-        pitchEnv: { amount: 0, decay: 0.08 },
-        unison: 1,
-        adsr: {a:0.01, d:0.1, s:0.7, r:0.2},
-        pan: 64,
-        volume: 0,
-        muted: false,
-        solo: false,
+        name: tr.name || (isDrum ? '드럼' : ''),
         notes: trackNotes
       });
+      if (isDrum) track.drumKit = true;
+      project.tracks.push(track);
     });
 
     renderTrackList();
@@ -9220,7 +9248,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.2.2<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.2.2.1<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
     () => {}, '확인', ''
   );
 });
