@@ -4476,7 +4476,7 @@ function inputChordPadChord(rootPitch, type, exts) {
   prSnapshot();
   const snap = PR.snapValues[PR.snapIdx] || 0;
   const startBeat = snap > 0 ? Math.round(PR.playPos / snap) * snap : PR.playPos;
-  const lenBeats = Math.max(1, project.timeNum || 4);
+  const lenBeats = barLength();
 
   // 코드 입력 후에는 바로 이동/길이조절이 가능하도록 선택 모드를 켠다.
   // 이미 선택 모드가 켜져 있으면 기존 선택은 유지하고, 새 코드만 추가 선택한다.
@@ -4534,7 +4534,7 @@ function shouldLoopPlayback() {
 }
 
 function getProjectEndBeat() {
-  return Math.max(1, (project.bars || 1) * (project.timeNum || 4));
+  return Math.max(1, (project.bars || 1) * barLength());
 }
 
 // 뮤트 안 된 트랙들의 마지막 노트 끝 박자
@@ -4552,13 +4552,13 @@ function computeLastNoteBeat() {
 const RECORD_EMPTY_BARS = 4; // 빈 상태에서 녹음 시작 시 반복할 마디 수
 // 녹음 모드 루프 끝(박자): 노트가 없으면 RECORD_EMPTY_BARS 마디, 있으면 프로젝트 전체 길이
 function getRecordLoopEndBeat() {
-  const beatsPerBar = Math.max(1, project.timeNum || 4);
+  const beatsPerBar = barLength();
   return computeLastNoteBeat() === 0 ? beatsPerBar * RECORD_EMPTY_BARS : getProjectEndBeat();
 }
 
 function extendProjectBarsForBeat(beat, force = false) {
   if (!force && !midiRecordEnabled) return;
-  const beatsPerBar = Math.max(1, project.timeNum || 4);
+  const beatsPerBar = barLength();
   const neededBars = Math.max(1, Math.ceil((Math.max(0, beat) + 0.001) / beatsPerBar));
   if (neededBars > project.bars) {
     project.bars = neededBars;
@@ -5062,6 +5062,16 @@ let project = {
 
 let currentTrackIdx = -1;
 
+// 박자 분모를 내부 단위(1박 = 4분음표)로 환산한다.
+// beatUnit(): 분모 음표 1개의 길이, barLength(): 한 마디의 길이.
+// 예) 6/8이면 beatUnit()=0.5, barLength()=3 — 6/4(마디 길이 6)와 그리드가 달라진다.
+function beatUnit() {
+  return 4 / Math.max(1, (project && project.timeDen) || 4);
+}
+function barLength() {
+  return Math.max(1, (project && project.timeNum) || 4) * beatUnit();
+}
+
 const THEME_CLASSES = ['theme-aero', 'theme-dark', 'theme-typewriter', 'theme-fruits', 'theme-brass', 'theme-pt', 'theme-crt-green', 'theme-cube'];
 const THEME_STORAGE_KEY = 'composerTheme';
 const THEME_LABELS = {
@@ -5365,18 +5375,17 @@ const PR = {
   snapLabels: ['1/1','1/2','1/4','1/8','1/16','1/32','1T','1/2T','1/4T','1/8T','OFF'],
   get snapValues() {
     // 내부 단위: 1 = 4분음표 한 박.
+    // 모든 스냅은 박자표와 무관한 절대 음표 길이다 (1/1 = 온음표 = 4박).
     // T는 '그 기준 음표의 길이를 셋잇단 격자로 쪼갠 간격'으로 둔다.
     // 이 앱의 그리드 감각에서는 1/4T = 한 박을 3등분 = 1/3박.
-    // 그래서 3/4에서도 1마디가 9칸으로 딱 맞는다.
-    const bar = project ? project.timeNum : 4;
     return [
-      bar,    // 1/1  (1마디)
+      4,      // 1/1  (온음표)
       2,      // 1/2
       1,      // 1/4
       0.5,    // 1/8
       0.25,   // 1/16
       0.125,  // 1/32
-      bar/3,  // 1T    (한 마디를 3등분)
+      4/3,    // 1T    (온음표를 3등분)
       2/3,    // 1/2T
       1/3,    // 1/4T  (한 박을 3등분)
       1/6,    // 1/8T
@@ -5835,7 +5844,7 @@ function drawTrackPreview(canvas, track) {
   ctx.strokeStyle = theme.previewStroke;
   ctx.strokeRect(0.5, 0.5, W-1, H-1);
 
-  const tb = project.bars * project.timeNum;
+  const tb = project.bars * barLength();
 
   // 진행바와 픽셀 단위로 정확히 맞추기
   // 진행바에서 재생바 X = getMainProgressLeftW() + PR.playPos * beatW - mainProgressScrollX
@@ -6883,7 +6892,7 @@ function resizePR() {
 }
 
 function totalBeats() {
-  const beatsPerBar = project.timeNum;
+  const beatsPerBar = barLength();
   const base = project.bars * beatsPerBar;
 
   // 모든 노트의 최대 위치 계산
@@ -7013,7 +7022,8 @@ function drawPR() {
   // Beat grid - 스냅 설정 + 현재 박자표 기준
   // 셋잇단처럼 마디 길이와 딱 나누어떨어지지 않는 스냅도 안정적으로 보이게,
   // 전체를 0부터 누적하지 않고 '마디별 로컬 위치'로 선을 만든다.
-  const beatsPerBar = Math.max(1, project.timeNum || 4);
+  const beatsPerBar = barLength();
+  const unit = beatUnit();
   const snapRaw = PR.snapValues[PR.snapIdx];
   const gridStep = snapRaw && snapRaw > 0 ? snapRaw : 0.25; // OFF면 16분음표 보조선
   const eps = 0.0001;
@@ -7068,8 +7078,8 @@ function drawPR() {
     // 마디선
     markAndDraw(barStart, 'measure');
 
-    // 박자선: 3/4면 1, 2박 위치까지만 찍히고 다음은 마디선
-    for (let beat = 1; beat < beatsPerBar - eps; beat += 1) {
+    // 박자선: 분모 음표 간격으로 찍는다 (6/8이면 8분음표 간격 5개, 마지막은 마디선)
+    for (let beat = unit; beat < beatsPerBar - eps; beat += unit) {
       markAndDraw(barStart + beat, 'beat');
     }
 
@@ -7079,8 +7089,8 @@ function drawPR() {
         const globalBeat = barStart + local;
         const localRounded = Math.round(local * 768) / 768;
 
-        // 이미 정박이면 정박선 스타일에 맡김
-        if (Math.abs(localRounded - Math.round(localRounded)) < eps) continue;
+        // 이미 정박(분모 음표 배수)이면 정박선 스타일에 맡김
+        if (Math.abs(localRounded / unit - Math.round(localRounded / unit)) < eps) continue;
 
         const strength = Math.abs((localRounded * 2) - Math.round(localRounded * 2)) < eps ? 'half' : 'sub';
         markAndDraw(globalBeat, strength);
@@ -7181,18 +7191,27 @@ function drawTimeline() {
   tlCtx.fillStyle = theme.timelineBg;
   tlCtx.fillRect(0, 0, W, H);
 
+  // 마디 길이가 정수가 아닐 수 있어서(예: 7/8 = 3.5박) 정수 박 순회 대신 마디 기준으로 돈다.
   const tb = totalBeats();
-  for (let b = 0; b <= tb; b++) {
-    const x = beatToX(b);
-    if (x < 0 || x > W) continue;
-    const isMeasure = b % project.timeNum === 0;
-    if (isMeasure) {
+  const tlBarLen = barLength();
+  const tlUnit = beatUnit();
+  const tlBarCount = Math.ceil((tb - 0.0001) / tlBarLen);
+  const tlFirstBar = Math.max(0, Math.floor(xToBeat(0) / tlBarLen) - 1);
+  const tlLastBar = Math.min(tlBarCount, Math.ceil(xToBeat(W) / tlBarLen) + 1);
+  for (let bar = tlFirstBar; bar <= tlLastBar; bar++) {
+    const barStart = bar * tlBarLen;
+    const mx = beatToX(barStart);
+    if (mx >= 0 && mx <= W) {
       tlCtx.fillStyle = theme.timelineMeasure;
-      tlCtx.fillRect(x, 0, 1, H);
+      tlCtx.fillRect(mx, 0, 1, H);
       tlCtx.fillStyle = theme.label;
       tlCtx.font = '9px Consolas, D2Coding, monospace';
-      tlCtx.fillText(String(Math.floor(b/project.timeNum)+1), x+3, H-4);
-    } else {
+      tlCtx.fillText(String(bar + 1), mx + 3, H - 4);
+    }
+    if (bar === tlBarCount) continue;
+    for (let beat = tlUnit; beat < tlBarLen - 0.0001; beat += tlUnit) {
+      const x = beatToX(barStart + beat);
+      if (x < 0 || x > W) continue;
       tlCtx.fillStyle = theme.timelineBeat;
       tlCtx.fillRect(x, H/2, 1, H/2);
     }
@@ -7322,7 +7341,7 @@ function setupPRTouch() {
     // beat에는 손 보정이 이미 반영돼 있음(보정 0이면 클릭 그대로).
     const snapS = PR.snapValues[PR.snapIdx];
     const snapped = Math.max(0, snapS ? Math.floor(beat / snapS) * snapS : beat);
-    const snapLen = PR.snapValues[PR.snapIdx] || (project.timeNum / 8); // OFF면 1/8 기본
+    const snapLen = PR.snapValues[PR.snapIdx] || (barLength() / 8); // OFF면 1/8 기본
     const newPitch = Math.max(21, Math.min(107, pitch));
 
     // 터치 위치에 기존 노트 있는지 확인 → 삭제
@@ -7394,7 +7413,7 @@ function setupPRTouch() {
       const note = PR.notes[prTouchState.noteIdx];
       if (!note) return;
       const curBeat = xToBeat(x);
-      const minLen = PR.snapValues[PR.snapIdx] || (project.timeNum / 8);
+      const minLen = PR.snapValues[PR.snapIdx] || (barLength() / 8);
       const len = Math.max(minLen, curBeat - note.startBeat);
       note.lenBeats = snapBeat(len) || minLen;
       drawPR();
@@ -7410,7 +7429,7 @@ function setupPRTouch() {
         const note = PR.notes[prTouchState.noteIdx];
         if (!note) return;
         const curBeat = xToBeat(x);
-        const minLen = PR.snapValues[PR.snapIdx] || (project.timeNum / 32);
+        const minLen = PR.snapValues[PR.snapIdx] || (barLength() / 32);
         const newLen = snapBeat(Math.max(minLen, curBeat - note.startBeat)) || minLen;
         const nextNote = PR.notes.find(n =>
           n !== note && n.pitch === note.pitch && n.startBeat > note.startBeat
@@ -8246,28 +8265,28 @@ function showConfirm(msg, onYes, yesLabel, noLabel) {
 document.getElementById('posDecBtn').addEventListener('click', () => {
   showPRToast('Pos− (위치 앞으로)');
   prSnapshot();
-  const s = PR.snapValues[PR.snapIdx] || (project.timeNum / 8);
+  const s = PR.snapValues[PR.snapIdx] || (barLength() / 8);
   PR.notes.filter(n=>n.selected).forEach(n => n.startBeat = Math.max(0, n.startBeat - s));
   drawPR();
 });
 document.getElementById('posIncBtn').addEventListener('click', () => {
   showPRToast('Pos+ (위치 뒤로)');
   prSnapshot();
-  const s = PR.snapValues[PR.snapIdx] || (project.timeNum / 8);
+  const s = PR.snapValues[PR.snapIdx] || (barLength() / 8);
   PR.notes.filter(n=>n.selected).forEach(n => n.startBeat += s);
   drawPR();
 });
 document.getElementById('lenDecBtn').addEventListener('click', () => {
   showPRToast('Len− (길이 줄이기)');
   prSnapshot();
-  const s = PR.snapValues[PR.snapIdx] || (project.timeNum / 8);
+  const s = PR.snapValues[PR.snapIdx] || (barLength() / 8);
   PR.notes.filter(n=>n.selected).forEach(n => n.lenBeats = Math.max(s, n.lenBeats - s));
   drawPR();
 });
 document.getElementById('lenIncBtn').addEventListener('click', () => {
   showPRToast('Len+ (길이 늘리기)');
   prSnapshot();
-  const s = PR.snapValues[PR.snapIdx] || (project.timeNum / 8);
+  const s = PR.snapValues[PR.snapIdx] || (barLength() / 8);
   PR.notes.filter(n=>n.selected).forEach(n => n.lenBeats += s);
   drawPR();
 });
@@ -9075,7 +9094,8 @@ function importMidi(buffer, sourceFileName = '') {
     const allNotes = midi.tracks.flatMap(tr => tr.notes);
     const maxTick = allNotes.reduce((m,n) => Math.max(m, n.startTick + n.lenTick), 0);
     const totalBeatsRaw = maxTick / tpb;
-    const bars = Math.max(4, Math.ceil(totalBeatsRaw / midi.timeNum));
+    const importBarLen = Math.max(0.125, (midi.timeNum || 4) * 4 / (midi.timeDen || 4));
+    const bars = Math.max(4, Math.ceil(totalBeatsRaw / importBarLen));
 
     project.bpm = Math.max(1, Math.min(1000, bpm));
     project.timeNum = midi.timeNum || 4;
@@ -9277,7 +9297,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.2.2.2<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.2.2.3<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
     () => {}, '확인', ''
   );
 });
@@ -10040,7 +10060,7 @@ function exportMidi(programs) {
     return;
   }
 
-  const oneBarBeats = Math.max(1, project.timeNum || 4);
+  const oneBarBeats = barLength();
   const songEndBeat = lastBeat + oneBarBeats;
   const songEndTick = Math.round(songEndBeat * ticksPerBeat);
 
@@ -10234,18 +10254,24 @@ function drawMainProgress() {
   const beatW = Math.max(20, rollW * 2 / tb);
   mainProgressBeatW = beatW; // 미리보기와 공유
 
-  // 마디 그리드
-  for (let b = 0; b <= tb; b++) {
-    const x = getMainProgressLeftW() + b * beatW - mainProgressScrollX;
-    if (x < getMainProgressLeftW() - beatW || x > W) continue;
-    const isMeasure = b % project.timeNum === 0;
-    if (isMeasure) {
+  // 마디 그리드 - 마디 길이가 정수가 아닐 수 있어서(예: 7/8 = 3.5박) 마디 기준으로 돈다.
+  const mpBarLen = barLength();
+  const mpUnit = beatUnit();
+  const mpBarCount = Math.ceil((tb - 0.0001) / mpBarLen);
+  for (let bar = 0; bar <= mpBarCount; bar++) {
+    const barStart = bar * mpBarLen;
+    const mx = getMainProgressLeftW() + barStart * beatW - mainProgressScrollX;
+    if (mx >= getMainProgressLeftW() - beatW && mx <= W) {
       ctx.fillStyle = theme.measureLine;
-      ctx.fillRect(x, 0, 1, H);
+      ctx.fillRect(mx, 0, 1, H);
       ctx.fillStyle = theme.label;
       ctx.font = '8px Consolas, D2Coding, monospace';
-      ctx.fillText(String(Math.floor(b / project.timeNum) + 1), x + 3, H - 3);
-    } else {
+      ctx.fillText(String(bar + 1), mx + 3, H - 3);
+    }
+    if (bar === mpBarCount) continue;
+    for (let beat = mpUnit; beat < mpBarLen - 0.0001; beat += mpUnit) {
+      const x = getMainProgressLeftW() + (barStart + beat) * beatW - mainProgressScrollX;
+      if (x < getMainProgressLeftW() - beatW || x > W) continue;
       ctx.fillStyle = theme.subLine;
       ctx.fillRect(x, H / 2, 1, H / 2);
     }
@@ -10384,13 +10410,13 @@ function updateMainProgressScroll() {
   }
 
   function openBarJump() {
-    const cur = Math.floor(PR.playPos / project.timeNum) + 1;
+    const cur = Math.floor(PR.playPos / barLength()) + 1;
     const overlay = document.getElementById('confirmOverlay');
     const msg = document.getElementById('confirmMsg');
     const yes = document.getElementById('confirmYes');
     const no = document.getElementById('confirmNo');
 
-    const maxBar = Math.ceil(totalBeats() / project.timeNum);
+    const maxBar = Math.ceil(totalBeats() / barLength());
     msg.innerHTML = `마디 이동 (1–${maxBar})<br><input id="barJumpInput" type="number" min="1" max="${maxBar}" value="${cur}" style="width:80px;background:var(--bg3);border:1px solid var(--accent);color:var(--text);border-radius:6px;padding:6px;font-size:16px;text-align:center;margin-top:8px;outline:none;">`;
     yes.textContent = '이동';
     no.textContent = '취소';
@@ -10407,7 +10433,7 @@ function updateMainProgressScroll() {
       const inp = document.getElementById('barJumpInput');
       const bar = Math.max(1, Math.min(maxBar, parseInt(inp ? inp.value : cur)));
       if (isNaN(bar)) return;
-      PR.playPos = (bar - 1) * project.timeNum;
+      PR.playPos = (bar - 1) * barLength();
       const { rollW, beatW } = metrics();
       setScrollX(PR.playPos * beatW - rollW * 0.2);
       drawMainProgress();
@@ -10540,7 +10566,7 @@ function updateMainProgressScroll() {
 
 // 페이지 이동 (1마디씩)
 function prPageMove(dir) {
-  const beatsPerBar = project.timeNum;
+  const beatsPerBar = barLength();
   PR.scrollX = Math.max(-8, PR.scrollX + dir * beatsPerBar * PR.beatW);
   savePRViewState();
   drawPR();
@@ -10668,7 +10694,7 @@ document.getElementById('prTimelineKeys').addEventListener('click', () => {
 });
 
 function openPRBarJump() {
-  const cur = Math.floor(PR.playPos / project.timeNum) + 1;
+  const cur = Math.floor(PR.playPos / barLength()) + 1;
   const overlay = document.getElementById('confirmOverlay');
   const msg = document.getElementById('confirmMsg');
   const yes = document.getElementById('confirmYes');
@@ -10682,10 +10708,10 @@ function openPRBarJump() {
   yes.onclick = () => {
     overlay.style.display = 'none';
     const inp = document.getElementById('barJumpInput');
-    const maxBar = Math.ceil(totalBeats() / project.timeNum);
+    const maxBar = Math.ceil(totalBeats() / barLength());
     const bar = Math.max(1, Math.min(maxBar, parseInt(inp ? inp.value : cur)));
     if (isNaN(bar)) return;
-    const targetBeat = (bar - 1) * project.timeNum;
+    const targetBeat = (bar - 1) * barLength();
     PR.playPos = targetBeat;
     PR.scrollX = Math.max(-8, targetBeat * PR.beatW - prCanvas.width * 0.2);
     drawPR();
