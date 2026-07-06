@@ -2916,6 +2916,14 @@
 </div>
 </div>
 <div class="settings-group">
+<div class="settings-label">음색 프리셋</div>
+<div style="display:flex;gap:6px;">
+<button class="ex-style-030" id="voicePresetSaveBtn" style="flex:1;margin-bottom:0;">💾 파일로 저장</button>
+<button class="ex-style-030" id="voicePresetLoadBtn" style="flex:1;margin-bottom:0;">📂 불러오기</button>
+</div>
+<input accept=".json,application/json" id="voicePresetFileInput" style="display:none;" type="file"/>
+</div>
+<div class="settings-group">
 <div class="settings-label">드럼 프리셋</div>
 <div class="ex-style-017">
 <input class="ex-style-018" id="drumKitToggle" type="checkbox"/>
@@ -6779,6 +6787,105 @@ document.getElementById('analogLikePresetBtn').addEventListener('click', () => {
   updateAdsrDisplay();
   scheduleAutoSave();
   previewNote(48);
+});
+
+// ============================================================
+// 음색 프리셋 저장/불러오기 (프로젝트처럼 JSON 파일로)
+// ============================================================
+const VOICE_PRESET_FILE_TYPE = 'composer-voice-preset';
+// 뮤트/솔로/고스트와 트랙 고유 정보(이름·색·노트)만 빼고 소리에 관련된 전부를 저장한다.
+const VOICE_PRESET_FIELDS = [
+  'waveType', 'wtTypeA', 'wtTypeB', 'wtMorph', 'wtDataA', 'wtDataB',
+  'wtPitchA', 'wtPitchB', 'noiseMix', 'noisePitchFilter', 'lfo',
+  'detune', 'pitchEnv', 'unison', 'filter', 'glide', 'adsr',
+  'pan', 'volume', 'drumKit',
+  'samplerData', 'samplerRate', 'samplerRoot', 'samplerStart', 'samplerEnd'
+];
+
+function saveVoicePresetToFile(name) {
+  if (!name || currentTrackIdx < 0) return;
+  saveCurrentSettings(); // 슬라이더의 최신값을 track에 반영한 뒤 스냅샷
+  const track = project.tracks[currentTrackIdx];
+  const voice = {};
+  VOICE_PRESET_FIELDS.forEach(f => {
+    if (track[f] !== undefined) voice[f] = track[f];
+  });
+  const data = { type: VOICE_PRESET_FILE_TYPE, version: 1, name, voice };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  downloadBlob(blob, name + '.json');
+}
+
+// 저장 버튼: 버튼 자리를 파일 이름 입력칸으로 바꿔서 (트랙 이름 편집과 같은 인라인 방식) 입력받는다
+document.getElementById('voicePresetSaveBtn').addEventListener('click', () => {
+  if (currentTrackIdx < 0) return;
+  const btn = document.getElementById('voicePresetSaveBtn');
+  const track = project.tracks[currentTrackIdx];
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = track.name || '음색 프리셋';
+  input.maxLength = 40;
+  input.style.cssText = 'flex:1;background:var(--bg3);border:1px solid var(--accent);color:var(--text);border-radius:6px;padding:8px;font-size:11px;font-family:Consolas,monospace;outline:none;';
+  btn.style.display = 'none';
+  btn.parentNode.insertBefore(input, btn);
+  input.focus();
+  input.select();
+  let closed = false;
+  const done = commit => {
+    if (closed) return;
+    closed = true;
+    const name = input.value.trim();
+    input.remove();
+    btn.style.display = '';
+    if (commit && name) saveVoicePresetToFile(name);
+  };
+  input.addEventListener('blur', () => done(true));
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); done(true); }
+    if (e.key === 'Escape') done(false);
+  });
+});
+
+// 불러오기 버튼 → 파일 선택
+document.getElementById('voicePresetLoadBtn').addEventListener('click', () => {
+  if (currentTrackIdx < 0) return;
+  document.getElementById('voicePresetFileInput').click();
+});
+
+document.getElementById('voicePresetFileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      // 정식 프리셋 파일이 우선. 예전/수동 편집 파일도 음색 필드가 보이면 받아준다.
+      const voice = data && data.type === VOICE_PRESET_FILE_TYPE && data.voice ? data.voice
+        : (data && (data.waveType || data.adsr || data.wtTypeA) ? data : null);
+      if (!voice) {
+        if (data && Array.isArray(data.tracks)) {
+          showConfirm('이 파일은 프로젝트 파일이에요.\n프로젝트는 메뉴(⋮)의 "열기"로 불러와 주세요.', () => {}, '확인', '');
+        } else {
+          showConfirm('음색 프리셋 파일이 아니에요.', () => {}, '확인', '');
+        }
+        return;
+      }
+      if (currentTrackIdx < 0) return;
+      const track = project.tracks[currentTrackIdx];
+      VOICE_PRESET_FIELDS.forEach(f => {
+        if (voice[f] !== undefined) track[f] = voice[f];
+        else delete track[f]; // 프리셋에 없는 필드는 지워서 이전 음색이 섞이지 않게 한다
+      });
+      // 드럼 프리셋과 같은 방식으로 UI 전체 갱신 + 미리듣기
+      openSettings(currentTrackIdx);
+      updateAdsrDisplay();
+      scheduleAutoSave();
+      previewNote(60);
+    } catch {
+      showConfirm('파일을 읽을 수 없습니다.', () => {}, '확인', '');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
 });
 
 // 재생 중 신스 설정(랜덤·웨이브테이블·피치·LFO·ADSR·노이즈·팬·볼륨 등)이 바뀌면 즉시 새 사운드로 이어 재생.
