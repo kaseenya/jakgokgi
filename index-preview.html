@@ -3581,8 +3581,8 @@ function startWavetableVoices(ctx, track, pitch, env, startTime, stopTime, lfoDu
   const specs = getUnisonVoiceSpecs(track);
   const morph = Math.max(0, Math.min(1, (track.wtMorph || 0) / 100));
   const waves = {
-    A: wtDataToPeriodicWave(ctx, wtGetSlotData(track, 'A')),
-    B: wtDataToPeriodicWave(ctx, wtGetSlotData(track, 'B'))
+    A: wtGetSlotWave(ctx, track, 'A'),
+    B: wtGetSlotWave(ctx, track, 'B')
   };
   const slotGains = {
     A: Math.cos(morph * Math.PI * 0.5),
@@ -3773,6 +3773,43 @@ function wtGetSlotData(track, slot) {
     return new Float32Array(track[key]);
   }
   return wtPresetData(type);
+}
+
+// PeriodicWave 캐시 — wtDataToPeriodicWave의 DFT는 O(N²)라 노트마다 돌리면
+// 첫 scheduleAhead가 수백 ms짜리 동기 루프가 되고, 그 사이 오디오 클럭이
+// 시작 여유(PLAYBACK_START_DELAY)를 지나쳐 첫 박 화음이 밀리거나 누락됐다.
+// 파형 내용이 같으면 만들어둔 PeriodicWave를 재사용한다.
+const wtPresetWaveCache = new WeakMap(); // ctx → Map(프리셋 타입 → wave)
+const wtDrawWaveCache = new WeakMap();   // draw 데이터 배열 → { ctx, copy, wave }
+
+function wtGetSlotWave(ctx, track, slot) {
+  const typeKey = slot === 'A' ? 'wtTypeA' : 'wtTypeB';
+  const dataKey = slot === 'A' ? 'wtDataA' : 'wtDataB';
+  const type = track[typeKey] || (slot === 'A' ? 'sine' : 'square');
+  if (type === 'draw' && track[dataKey]) {
+    const src = track[dataKey];
+    const hit = wtDrawWaveCache.get(src);
+    if (hit && hit.ctx === ctx && hit.copy.length === src.length) {
+      // 그리기 도중 배열이 제자리에서 바뀔 수 있으므로 내용까지 비교해 무효화한다
+      // (256개 비교는 DFT 비용에 비하면 공짜다)
+      let same = true;
+      for (let i = 0; i < src.length; i++) {
+        if (hit.copy[i] !== src[i]) { same = false; break; }
+      }
+      if (same) return hit.wave;
+    }
+    const wave = wtDataToPeriodicWave(ctx, new Float32Array(src));
+    wtDrawWaveCache.set(src, { ctx, copy: Array.from(src), wave });
+    return wave;
+  }
+  let perCtx = wtPresetWaveCache.get(ctx);
+  if (!perCtx) { perCtx = new Map(); wtPresetWaveCache.set(ctx, perCtx); }
+  let wave = perCtx.get(type);
+  if (!wave) {
+    wave = wtDataToPeriodicWave(ctx, wtPresetData(type));
+    perCtx.set(type, wave);
+  }
+  return wave;
 }
 
 // 트랙에서 최종 PeriodicWave 생성
@@ -4711,7 +4748,7 @@ function preserveBarsForExistingNotes() {
   if (maxBeat > 0) extendProjectBarsForBeat(maxBeat, true);
 }
 
-function scheduleNote(ctx2, track, note, bps) {
+function scheduleNote(ctx2, track, note, bps, passNow) {
   // 드럼키트 트랙이면 이 노트의 행(pitch)에 맞는 드럼 음색으로 교체하고, 그 드럼 고유음에서 합성.
   const _voice = resolveDrumVoice(track, note.pitch);
   track = _voice.track;
@@ -4719,7 +4756,10 @@ function scheduleNote(ctx2, track, note, bps) {
   const startDelay = (note.startBeat - playbackStartBeat) / bps;
   const duration = note.lenBeats / bps;
   const nominalStartTime = playbackStartTime + startDelay;
-  const audioNow = ctx2.currentTime;
+  // 한 scheduleAhead 패스 안에서는 같은 기준 시각(passNow)으로 클램프한다.
+  // 노트마다 currentTime을 새로 읽으면, 예약 루프가 도는 동안 클럭이 전진해
+  // 같은 박자의 화음이 노트별로 조금씩 밀려 찢어져 들린다 (첫 박에서 특히).
+  const audioNow = passNow !== undefined ? passNow : ctx2.currentTime;
   // 시작점이 아주 살짝 과거가 되는 경우가 있는데, 빠른 BPM에서는 그 차이가 한 박자처럼 체감될 수 있다.
   // 노트가 이미 완전히 끝난 경우만 버리고, 경계 노트는 즉시/가까운 미래로 보정해서 살린다.
   if (nominalStartTime + duration < audioNow - 0.03) return;
@@ -4819,7 +4859,9 @@ function scheduleAhead() {
   if (!isPlaying) return;
   const ctx2 = getAudioCtx();
   const bps = project.bpm / 60;
-  const elapsed = Math.max(0, ctx2.currentTime - playbackStartTime);
+  // 이 패스의 기준 시각 — 루프 안에서 노트마다 다시 읽지 않는다 (화음 찢어짐 방지)
+  const passNow = ctx2.currentTime;
+  const elapsed = Math.max(0, passNow - playbackStartTime);
   const currentBeat = playbackStartBeat + elapsed * bps;
   const scheduleUntilBeat = currentBeat + SCHEDULE_AHEAD * bps;
 
@@ -4840,7 +4882,7 @@ function scheduleAhead() {
       if (note.startBeat <= scheduledUntilBeat + BEAT_EPS) return;
       if (note.startBeat > scheduleUntilBeat + BEAT_EPS) return;
       if (note.startBeat + note.lenBeats < playbackStartBeat - BEAT_EPS) return;
-      scheduleNote(ctx2, track, note, bps);
+      scheduleNote(ctx2, track, note, bps, passNow);
     });
   });
 
@@ -4920,6 +4962,22 @@ function resyncPlaybackAfterThrottle(reason = '') {
   }
 }
 
+// 재생 세션 토큰: 클럭 대기 중에 정지/재시작되면 이전 세션의 콜백을 폐기하기 위함
+let playbackSessionId = 0;
+
+// 오디오 클럭이 실제로 흐르기 시작한 뒤 콜백을 실행한다. cb(waited) — waited는 기다렸는지 여부.
+// 이미 정상 구동 중인 컨텍스트면 동기적으로 즉시 실행되므로 기존 경로에 추가 지연이 없다.
+function whenAudioClockRunning(ctx, cb) {
+  if (ctx.state === 'running' && ctx.currentTime > 0) { cb(false); return; }
+  try { const p = ctx.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+  const t0 = ctx.currentTime;
+  let done = false;
+  const finish = () => { if (done) return; done = true; clearInterval(poll); clearTimeout(bail); cb(true); };
+  const poll = setInterval(() => { if (ctx.currentTime > t0) finish(); }, 10);
+  // 클럭이 계속 안 흐르는 비정상 상황에서도 예전(고정 지연) 방식으로라도 시작한다
+  const bail = setTimeout(finish, 1000);
+}
+
 function startPlayback(soloOnly = false) {
   const ctx = getAudioCtx();
   if (ctx.state === 'suspended') ctx.resume();
@@ -4958,9 +5016,27 @@ function startPlayback(soloOnly = false) {
     masterGain.gain.value = Math.max(0.05, 0.25 / Math.sqrt(Math.max(1, activeTracks)));
   }
 
-  // 첫 스케줄
-  scheduleAhead();
+  // 콜드스타트 보정: 정지(⏹)로 AudioContext를 닫았다 새로 만든 직후나 일시정지에서
+  // 깨어나는 직후에는 출력 스트림이 열리기 전까지 예약음이 기기에 따라(블루투스,
+  // 느린 안드로이드 등) 통째로 사라질 수 있다 → "첫 박자가 안 나온다" 제보의 원인.
+  // 오디오 클럭이 실제로 전진하는 것을 확인한 뒤에 시작점을 잡고 예약한다.
+  const session = ++playbackSessionId;
+  whenAudioClockRunning(ctx, waited => {
+    // 기다리는 사이 정지/재시작/컨텍스트 교체가 있었으면 이 세션은 폐기
+    if (!isPlaying || session !== playbackSessionId || ctx !== audioCtx) return;
+    if (waited) {
+      // 위에서 잡아둔 임시 앵커는 멎어 있던 클럭 기준이라, 살아난 클럭 기준으로 다시 잡는다
+      playbackStartTime = ctx.currentTime + PLAYBACK_START_DELAY;
+      playbackStartWallTime = performance.now() + PLAYBACK_START_DELAY * 1000;
+      lastPlaybackTickWallTime = playbackStartWallTime;
+    }
+    // 첫 스케줄
+    scheduleAhead();
+    startPlayheadTimer();
+  });
+}
 
+function startPlayheadTimer() {
   // Playhead animation
   playbackTimer = setInterval(() => {
     const tickNow = performance.now();
