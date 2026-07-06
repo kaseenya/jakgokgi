@@ -3054,6 +3054,30 @@
 <input id="pitchEnvDecaySlider" max="1" min="0.005" step="0.005" type="range" value="0.08"/>
 </div>
 </div>
+<div class="settings-group" id="filterGroup">
+<div class="settings-label">Filter</div>
+<button class="ex-style-030" id="analogLikePresetBtn">🎛️ ANALOG-LIKE 프리셋</button>
+<div class="slider-row">
+<div class="slider-top"><span>Cutoff</span><span id="fltCutoffVal">16.0 kHz</span></div>
+<input id="fltCutoffSlider" max="100" min="0" step="1" type="range" value="100"/>
+</div>
+<div class="slider-row">
+<div class="slider-top"><span>Resonance</span><span id="fltResoVal">0%</span></div>
+<input id="fltResoSlider" max="100" min="0" step="1" type="range" value="0"/>
+</div>
+<div class="slider-row">
+<div class="slider-top"><span>Env Amount</span><span id="fltEnvVal">0%</span></div>
+<input id="fltEnvSlider" max="100" min="0" step="1" type="range" value="0"/>
+</div>
+<div class="slider-row">
+<div class="slider-top"><span>Env Decay</span><span id="fltDecayVal">300ms</span></div>
+<input id="fltDecaySlider" max="1.5" min="0.02" step="0.01" type="range" value="0.3"/>
+</div>
+<div class="slider-row">
+<div class="slider-top"><span>Glide</span><span id="glideVal">OFF</span></div>
+<input id="glideSlider" max="400" min="0" step="5" type="range" value="0"/>
+</div>
+</div>
 <div class="settings-group" id="lfoGroup">
 <div class="settings-label">LFO</div>
 <div class="ex-style-023">
@@ -3475,6 +3499,63 @@ function getUnisonVoiceSpecs(track) {
   });
 }
 
+// ── Analog-like 필터 ─────────────────────────────────────────
+// 빈티지 아날로그 신스의 레조넌스 로우패스를 BiquadFilter 2단 직렬(≈24dB/oct)로 근사.
+// 필터 엔벨로프는 pitchEnv와 같은 패턴: 시작 시 cutoff를 위로 열었다가 decay 동안 기준값으로 닫는다.
+function getTrackFilter(track) {
+  const f = track && track.filter ? track.filter : {};
+  const cutoff = Number(f.cutoff);
+  const reso = Number(f.reso);
+  const envAmt = Number(f.envAmt);
+  const decay = Number(f.decay);
+  return {
+    cutoff: Number.isFinite(cutoff) ? Math.max(0, Math.min(100, cutoff)) : 100,
+    reso: Number.isFinite(reso) ? Math.max(0, Math.min(100, reso)) : 0,
+    envAmt: Number.isFinite(envAmt) ? Math.max(0, Math.min(100, envAmt)) : 0,
+    decay: Number.isFinite(decay) ? Math.max(0.02, Math.min(1.5, decay)) : 0.3
+  };
+}
+
+// 글라이드는 ms로 저장, 초로 사용
+function getTrackGlideSec(track) {
+  const g = Number(track && track.glide);
+  return Number.isFinite(g) && g > 0 ? Math.min(1, g / 1000) : 0;
+}
+
+// cutoff 슬라이더(0~100) → 60Hz~16kHz 지수 매핑 (귀에 균등하게 들리도록)
+function filterCutoffToHz(pct) {
+  const t = Math.max(0, Math.min(1, pct / 100));
+  return 60 * Math.pow(16000 / 60, t);
+}
+
+// 필터가 기본값(전부 열림)이면 null을 반환해 기존 트랙에는 노드를 하나도 추가하지 않는다.
+function createTrackFilterChain(ctx, track, startTime) {
+  const f = getTrackFilter(track);
+  if (f.cutoff >= 100 && f.reso <= 0 && f.envAmt <= 0) return null;
+  const lp1 = ctx.createBiquadFilter();
+  const lp2 = ctx.createBiquadFilter();
+  lp1.type = 'lowpass';
+  lp2.type = 'lowpass';
+  // 레조넌스는 1단에만 건다 (lowpass의 Q는 dB 단위). 2단은 -3dB로 눌러 겹침 과장을 막는다.
+  lp1.Q.value = (f.reso / 100) * 18;
+  lp2.Q.value = -3;
+  const baseHz = filterCutoffToHz(f.cutoff);
+  const peakHz = Math.min(16000, baseHz * Math.pow(2, (f.envAmt / 100) * 4)); // env 100% = +4옥타브
+  [lp1, lp2].forEach(lp => {
+    if (peakHz > baseHz + 1) {
+      lp.frequency.setValueAtTime(peakHz, startTime);
+      lp.frequency.exponentialRampToValueAtTime(baseHz, startTime + f.decay);
+    } else {
+      lp.frequency.value = baseHz;
+    }
+  });
+  lp1.connect(lp2);
+  return { input: lp1, output: lp2 };
+}
+
+// 트랙별 마지막 노트(글라이드 출발점). 저장 대상이 아니므로 track 객체 밖 WeakMap에 둔다.
+const wtGlideStates = new WeakMap();
+
 function applyOscPitchAutomation(osc, track, startTime, extraDetune = 0) {
   const detune = getTrackDetuneCents(track) + extraDetune;
   const pitchEnv = getTrackPitchEnv(track);
@@ -3504,19 +3585,43 @@ function startWavetableVoices(ctx, track, pitch, env, startTime, stopTime, lfoDu
   const oscs = [];
   const lfoNodes = [];
 
+  // Analog-like 필터: 오실레이터 합 → 로우패스 2단 → 앰프 env
+  const filterChain = createTrackFilterChain(ctx, track, startTime);
+  const oscDest = filterChain ? filterChain.input : env;
+  if (filterChain) filterChain.output.connect(env);
+
+  // 글라이드: 직전 노트가 (거의) 이어져 있으면 그 음높이에서 미끄러져 들어온다.
+  // 화음(같은 시작점) 노트끼리는 startTime이 같아 조건을 통과하지 못하므로 서로 글라이드하지 않는다.
+  const baseHz = pitchToHz(pitch);
+  const glideSec = getTrackGlideSec(track);
+  let glideFromHz = 0;
+  if (glideSec > 0) {
+    const prev = wtGlideStates.get(track);
+    if (prev && prev.ctx === ctx && startTime > prev.start + 1e-4 &&
+        startTime < prev.end + 0.15 && Math.abs(prev.hz - baseHz) > 0.01) {
+      glideFromHz = prev.hz;
+    }
+    wtGlideStates.set(track, { ctx, hz: baseHz, start: startTime, end: stopTime });
+  }
+
   specs.forEach(spec => {
     const voiceOutput = specs.length > 1 ? ctx.createStereoPanner() : ctx.createGain();
     if (specs.length > 1) {
       voiceOutput.pan.value = spec.pan;
     }
-    voiceOutput.connect(env);
+    voiceOutput.connect(oscDest);
 
     ['A', 'B'].forEach(slot => {
       if (slotGains[slot] <= 0) return;
       const osc = ctx.createOscillator();
       const oscGain = ctx.createGain();
       osc.setPeriodicWave(waves[slot]);
-      osc.frequency.value = pitchToHz(pitch);
+      if (glideFromHz > 0) {
+        osc.frequency.setValueAtTime(glideFromHz, startTime);
+        osc.frequency.exponentialRampToValueAtTime(baseHz, startTime + glideSec);
+      } else {
+        osc.frequency.value = baseHz;
+      }
       applyOscPitchAutomation(osc, track, startTime, spec.detune + getWTPitchSemis(track, slot) * 100);
       oscGain.gain.value = gainPerVoice * slotGains[slot];
       osc.connect(oscGain);
@@ -4146,6 +4251,21 @@ document.getElementById('randomSynthBtn').addEventListener('click', () => {
     track.lfo = { target: 'none', rate: 4, depth: 50, wave: 'sine' };
   }
 
+  // 필터 랜덤 (40% 확률로 활성 — 안 걸리면 완전히 열어서 이전 프리셋의 필터가 남지 않게 한다)
+  if (Math.random() < 0.4) {
+    track.filter = {
+      cutoff: Math.floor(Math.random() * 51) + 30,                          // 30~80 (약 500Hz~7kHz)
+      reso: Math.floor(Math.random() * 71),                                 // 0~70%
+      envAmt: Math.random() < 0.5 ? Math.floor(Math.random() * 61) + 20 : 0, // 절반은 20~80%로 "브아앙" 어택
+      decay: +(Math.random() * 0.55 + 0.05).toFixed(2)                      // 0.05~0.6초
+    };
+  } else {
+    track.filter = { cutoff: 100, reso: 0, envAmt: 0, decay: 0.3 };
+  }
+
+  // 글라이드 랜덤 (20% 확률로 30~150ms)
+  track.glide = Math.random() < 0.2 ? (Math.floor(Math.random() * 25) + 6) * 5 : 0;
+
   // UI 전부 갱신
   document.getElementById('samplerGroup').style.display = 'none';
   document.getElementById('adsrA').value = track.adsr.a;
@@ -4154,6 +4274,7 @@ document.getElementById('randomSynthBtn').addEventListener('click', () => {
   document.getElementById('adsrR').value = track.adsr.r;
   updateAdsrDisplay();
   updatePitchControlDisplay(track);
+  updateFilterControlDisplay(track);
   initWTEditor(track);
   initLFOEditor(track);
   saveCurrentSettings();
@@ -5916,6 +6037,8 @@ function defaultTrackSettings() {
     detune: 0,
     pitchEnv: { amount: 0, decay: 0.08 },
     unison: 1,
+    filter: { cutoff: 100, reso: 0, envAmt: 0, decay: 0.3 },
+    glide: 0,
     adsr: {a: 0.01, d: 0.1, s: 0.7, r: 0.2},
     pan: 64,
     volume: 0,
@@ -6460,6 +6583,7 @@ function openSettings(i) {
   document.getElementById('volSlider').value = getTrackVolumeDb(track);
   updateVolLabel(getTrackVolumeDb(track));
   updatePitchControlDisplay(track);
+  updateFilterControlDisplay(track);
   document.getElementById('muteBtn').className = 'toggle-btn' + (track.muted ? ' active' : '');
   document.getElementById('soloBtn').className = 'toggle-btn' + (track.solo ? ' active solo-active' : '');
   document.getElementById('ghostBtn').className = 'toggle-btn' + (track.ghost !== false ? ' active' : '');
@@ -6516,6 +6640,7 @@ function saveCurrentSettings() {
     decay: parseFloat(document.getElementById('pitchEnvDecaySlider').value) || 0.08
   };
   track.unison = parseInt(document.getElementById('unisonSlider').value, 10) || 1;
+  readFilterControlsInto(track);
   // ADSR은 updateAdsrDisplay에서 이미 즉시 반영되므로 여기서는 건드리지 않음
 }
 
@@ -6589,6 +6714,71 @@ document.getElementById('volSlider').addEventListener('input', e => {
 });
 ['wtPitchASlider','wtPitchBSlider','detuneSlider','pitchEnvAmountSlider','pitchEnvDecaySlider','unisonSlider'].forEach(id => {
   document.getElementById(id).addEventListener('input', savePitchControlsFromInputs);
+});
+
+function updateFilterControlDisplay(track) {
+  const f = getTrackFilter(track);
+  const hz = filterCutoffToHz(f.cutoff);
+  document.getElementById('fltCutoffSlider').value = f.cutoff;
+  document.getElementById('fltCutoffVal').textContent =
+    hz >= 1000 ? (hz / 1000).toFixed(1) + ' kHz' : Math.round(hz) + ' Hz';
+  document.getElementById('fltResoSlider').value = f.reso;
+  document.getElementById('fltResoVal').textContent = f.reso + '%';
+  document.getElementById('fltEnvSlider').value = f.envAmt;
+  document.getElementById('fltEnvVal').textContent = f.envAmt + '%';
+  document.getElementById('fltDecaySlider').value = f.decay;
+  document.getElementById('fltDecayVal').textContent = Math.round(f.decay * 1000) + 'ms';
+  const glideMs = Math.round(getTrackGlideSec(track) * 1000);
+  document.getElementById('glideSlider').value = glideMs;
+  document.getElementById('glideVal').textContent = glideMs > 0 ? glideMs + 'ms' : 'OFF';
+}
+
+function saveFilterControlsFromInputs() {
+  if (currentTrackIdx < 0) return;
+  const track = project.tracks[currentTrackIdx];
+  readFilterControlsInto(track);
+  updateFilterControlDisplay(track);
+  scheduleAutoSave();
+}
+
+function readFilterControlsInto(track) {
+  // cutoff는 0이 유효한 값이라 `|| 기본값` 패턴을 쓰면 안 된다
+  const cut = parseInt(document.getElementById('fltCutoffSlider').value, 10);
+  track.filter = {
+    cutoff: Number.isFinite(cut) ? cut : 100,
+    reso: parseInt(document.getElementById('fltResoSlider').value, 10) || 0,
+    envAmt: parseInt(document.getElementById('fltEnvSlider').value, 10) || 0,
+    decay: parseFloat(document.getElementById('fltDecaySlider').value) || 0.3
+  };
+  track.glide = parseInt(document.getElementById('glideSlider').value, 10) || 0;
+}
+
+['fltCutoffSlider','fltResoSlider','fltEnvSlider','fltDecaySlider','glideSlider'].forEach(id => {
+  document.getElementById(id).addEventListener('input', saveFilterControlsFromInputs);
+});
+
+// ANALOG-LIKE 프리셋: SAW 2옥타브 레이어 + 유니즌 디튠 + 레조넌스 로우패스 + 필터 env + 글라이드
+document.getElementById('analogLikePresetBtn').addEventListener('click', () => {
+  if (currentTrackIdx < 0) return;
+  const track = project.tracks[currentTrackIdx];
+  track.waveType = 'wavetable';
+  track.drumKit = false;
+  track.wtTypeA = 'sawtooth'; track.wtDataA = null; track.wtPitchA = 0;
+  track.wtTypeB = 'sawtooth'; track.wtDataB = null; track.wtPitchB = -12;
+  track.wtMorph = 35; // A(기본 음)에 무게, B(-1옥타브)는 받침
+  track.noiseMix = 0;
+  track.unison = 3;
+  track.detune = 0;
+  track.pitchEnv = { amount: 0, decay: 0.08 };
+  track.lfo = { target: 'none', rate: 4, depth: 50, wave: 'sine' };
+  track.adsr = { a: 0.005, d: 0.25, s: 0.6, r: 0.15 };
+  track.filter = { cutoff: 45, reso: 35, envAmt: 55, decay: 0.35 };
+  track.glide = 60;
+  // 모든 슬라이더를 track 값으로 다시 채운다 (드럼 프리셋과 같은 방식)
+  openSettings(currentTrackIdx);
+  updateAdsrDisplay();
+  scheduleAutoSave();
+  previewNote(48);
 });
 
 // 재생 중 신스 설정(랜덤·웨이브테이블·피치·LFO·ADSR·노이즈·팬·볼륨 등)이 바뀌면 즉시 새 사운드로 이어 재생.
