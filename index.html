@@ -4419,15 +4419,26 @@ function previewNote(pitch, durationBeats) {
   const relStart = Math.max(dcyEnd, now + duration - rel);
   const noteEnd = relStart + rel;
 
+  // ADSR: 어택/디케이는 자연 속도로 진행하고, 릴리즈는 그 시점의 "현재 레벨"에서 시작한다.
+  // 노트가 짧으면 어택/디케이 도중에 릴리즈로 넘어간다 (예전처럼 vol로 압축하거나 계단식 하강하지 않음).
+  const tRel = relStart - now; // 릴리즈 시작까지 경과 시간
+  let relLevel;
+  if (tRel < atk)            relLevel = vol * (tRel / atk);
+  else if (tRel < atk + dcy) relLevel = vol - (vol - vol * sus) * ((tRel - atk) / dcy);
+  else                       relLevel = vol * sus;
+
   env.gain.cancelScheduledValues(now);
   env.gain.setValueAtTime(0, now);
-  env.gain.linearRampToValueAtTime(vol, atkEnd);
-  // 디케이 구간이 실제로 있을 때만 서스틴으로 하강한다.
-  // 노트가 어택보다 짧으면 atkEnd==dcyEnd라 이 램프가 길이 0이 되어 vol→vol*sus로 계단식 하강 → 틱(클릭).
-  // 그 경우는 어택 정점에서 곧바로 릴리즈로 이어 붙여 불연속을 없앤다.
-  if (dcyEnd > atkEnd + 1e-4) {
-    env.gain.linearRampToValueAtTime(vol * sus, dcyEnd);
-    env.gain.setValueAtTime(vol * sus, relStart);
+  if (tRel >= atk) {
+    env.gain.linearRampToValueAtTime(vol, now + atk);              // 자연 어택 완주
+    if (tRel >= atk + dcy) {
+      env.gain.linearRampToValueAtTime(vol * sus, now + atk + dcy); // 자연 디케이 완주
+      env.gain.setValueAtTime(vol * sus, relStart);                // 서스틴 유지
+    } else {
+      env.gain.linearRampToValueAtTime(relLevel, relStart);        // 디케이 도중 릴리즈로
+    }
+  } else {
+    env.gain.linearRampToValueAtTime(relLevel, relStart);          // 어택 도중 릴리즈로
   }
   env.gain.linearRampToValueAtTime(0, noteEnd);
   env.connect(panNode);
@@ -4816,13 +4827,25 @@ function scheduleNote(ctx2, track, note, bps, passNow) {
   const relStart = Math.max(dcyEnd, now + duration - rel);
   const noteEnd = relStart + rel;
 
+  // ADSR: 어택/디케이는 자연 속도로 진행, 릴리즈는 노트오프 시점의 현재 레벨에서 시작.
+  const tRel = relStart - now;
+  let relLevel;
+  if (tRel < atk)            relLevel = vol * (tRel / atk);
+  else if (tRel < atk + dcy) relLevel = vol - (vol - vol * sus) * ((tRel - atk) / dcy);
+  else                       relLevel = vol * sus;
+
   env.gain.cancelScheduledValues(now);
   env.gain.setValueAtTime(0, now);
-  env.gain.linearRampToValueAtTime(vol, atkEnd);
-  // 디케이 구간이 실제로 있을 때만 서스틴으로 하강 (짧은 노트의 vol→vol*sus 계단식 하강 = 틱 방지).
-  if (dcyEnd > atkEnd + 1e-4) {
-    env.gain.linearRampToValueAtTime(vol * sus, dcyEnd);
-    env.gain.setValueAtTime(vol * sus, relStart);
+  if (tRel >= atk) {
+    env.gain.linearRampToValueAtTime(vol, now + atk);
+    if (tRel >= atk + dcy) {
+      env.gain.linearRampToValueAtTime(vol * sus, now + atk + dcy);
+      env.gain.setValueAtTime(vol * sus, relStart);
+    } else {
+      env.gain.linearRampToValueAtTime(relLevel, relStart);
+    }
+  } else {
+    env.gain.linearRampToValueAtTime(relLevel, relStart);
   }
   env.gain.linearRampToValueAtTime(0, noteEnd);
 
@@ -9704,7 +9727,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.3.1.2<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.3.1.3<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
     () => {}, '확인', ''
   );
 });
@@ -9966,12 +9989,24 @@ async function renderTrackToBuffer(srcTrack, offlineCtx) {
     const dcyEnd = now + Math.min(atk + dcy, duration);
     const relStart = Math.max(dcyEnd, now + duration - rel);
     const noteEnd = relStart + rel;
+    // ADSR: 어택/디케이는 자연 속도로 진행, 릴리즈는 노트오프 시점의 현재 레벨에서 시작.
+    const tRel = relStart - now;
+    let relLevel;
+    if (tRel < atk)            relLevel = vol * (tRel / atk);
+    else if (tRel < atk + dcy) relLevel = vol - (vol - vol * sus) * ((tRel - atk) / dcy);
+    else                       relLevel = vol * sus;
+
     env.gain.setValueAtTime(0, now);
-    env.gain.linearRampToValueAtTime(vol, atkEnd);
-    // 디케이 구간이 실제로 있을 때만 서스틴으로 하강 (짧은 노트의 vol→vol*sus 계단식 하강 = 틱 방지).
-    if (dcyEnd > atkEnd + 1e-4) {
-      env.gain.linearRampToValueAtTime(vol * sus, dcyEnd);
-      env.gain.setValueAtTime(vol * sus, relStart);
+    if (tRel >= atk) {
+      env.gain.linearRampToValueAtTime(vol, now + atk);
+      if (tRel >= atk + dcy) {
+        env.gain.linearRampToValueAtTime(vol * sus, now + atk + dcy);
+        env.gain.setValueAtTime(vol * sus, relStart);
+      } else {
+        env.gain.linearRampToValueAtTime(relLevel, relStart);
+      }
+    } else {
+      env.gain.linearRampToValueAtTime(relLevel, relStart);
     }
     env.gain.linearRampToValueAtTime(0, noteEnd);
 
