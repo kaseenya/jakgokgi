@@ -7769,11 +7769,13 @@ function setupPRTouch() {
       return;
     }
 
-    // 같은 pitch + 스냅 위치에 이미 겹치는 노트 있으면 생성 막기
+    // 같은 pitch + 스냅 위치에 이미 겹치는 노트 있으면 생성 막기.
+    // 경계를 맞대기만 한 경우(앞 노트 끝 == 새 노트 시작)는 겹침이 아니다.
+    // 셋잇단(1/3박) 등에서 끝/시작이 부동소수점으로 1 ULP 어긋나 잘못 막히던 것을 BEAT_EPS로 흡수한다.
     const overlap = PR.notes.find(n =>
       n.pitch === newPitch &&
-      snapped < n.startBeat + n.lenBeats &&
-      snapped + snapLen > n.startBeat
+      snapped < n.startBeat + n.lenBeats - BEAT_EPS &&
+      snapped + snapLen > n.startBeat + BEAT_EPS
     );
     if (overlap) return;
 
