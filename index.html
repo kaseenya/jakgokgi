@@ -2916,6 +2916,14 @@
 </div>
 </div>
 <div class="settings-group">
+<div class="settings-label">음색 프리셋</div>
+<div style="display:flex;gap:6px;">
+<button class="ex-style-030" id="voicePresetSaveBtn" style="flex:1;margin-bottom:0;">💾 파일로 저장</button>
+<button class="ex-style-030" id="voicePresetLoadBtn" style="flex:1;margin-bottom:0;">📂 불러오기</button>
+</div>
+<input accept=".json,application/json" id="voicePresetFileInput" style="display:none;" type="file"/>
+</div>
+<div class="settings-group">
 <div class="settings-label">드럼 프리셋</div>
 <div class="ex-style-017">
 <input class="ex-style-018" id="drumKitToggle" type="checkbox"/>
@@ -3052,6 +3060,30 @@
 <div class="slider-row">
 <div class="slider-top"><span>Decay</span><span id="pitchEnvDecayVal">80ms</span></div>
 <input id="pitchEnvDecaySlider" max="1" min="0.005" step="0.005" type="range" value="0.08"/>
+</div>
+</div>
+<div class="settings-group" id="filterGroup">
+<div class="settings-label">Filter</div>
+<button class="ex-style-030" id="analogLikePresetBtn">🎛️ ANALOG-LIKE 프리셋</button>
+<div class="slider-row">
+<div class="slider-top"><span>Cutoff</span><span id="fltCutoffVal">16.0 kHz</span></div>
+<input id="fltCutoffSlider" max="100" min="0" step="1" type="range" value="100"/>
+</div>
+<div class="slider-row">
+<div class="slider-top"><span>Resonance</span><span id="fltResoVal">0%</span></div>
+<input id="fltResoSlider" max="100" min="0" step="1" type="range" value="0"/>
+</div>
+<div class="slider-row">
+<div class="slider-top"><span>Env Amount</span><span id="fltEnvVal">0%</span></div>
+<input id="fltEnvSlider" max="100" min="0" step="1" type="range" value="0"/>
+</div>
+<div class="slider-row">
+<div class="slider-top"><span>Env Decay</span><span id="fltDecayVal">300ms</span></div>
+<input id="fltDecaySlider" max="1.5" min="0.02" step="0.01" type="range" value="0.3"/>
+</div>
+<div class="slider-row">
+<div class="slider-top"><span>Glide</span><span id="glideVal">OFF</span></div>
+<input id="glideSlider" max="400" min="0" step="5" type="range" value="0"/>
 </div>
 </div>
 <div class="settings-group" id="lfoGroup">
@@ -3475,6 +3507,63 @@ function getUnisonVoiceSpecs(track) {
   });
 }
 
+// ── Analog-like 필터 ─────────────────────────────────────────
+// 빈티지 아날로그 신스의 레조넌스 로우패스를 BiquadFilter 2단 직렬(≈24dB/oct)로 근사.
+// 필터 엔벨로프는 pitchEnv와 같은 패턴: 시작 시 cutoff를 위로 열었다가 decay 동안 기준값으로 닫는다.
+function getTrackFilter(track) {
+  const f = track && track.filter ? track.filter : {};
+  const cutoff = Number(f.cutoff);
+  const reso = Number(f.reso);
+  const envAmt = Number(f.envAmt);
+  const decay = Number(f.decay);
+  return {
+    cutoff: Number.isFinite(cutoff) ? Math.max(0, Math.min(100, cutoff)) : 100,
+    reso: Number.isFinite(reso) ? Math.max(0, Math.min(100, reso)) : 0,
+    envAmt: Number.isFinite(envAmt) ? Math.max(0, Math.min(100, envAmt)) : 0,
+    decay: Number.isFinite(decay) ? Math.max(0.02, Math.min(1.5, decay)) : 0.3
+  };
+}
+
+// 글라이드는 ms로 저장, 초로 사용
+function getTrackGlideSec(track) {
+  const g = Number(track && track.glide);
+  return Number.isFinite(g) && g > 0 ? Math.min(1, g / 1000) : 0;
+}
+
+// cutoff 슬라이더(0~100) → 60Hz~16kHz 지수 매핑 (귀에 균등하게 들리도록)
+function filterCutoffToHz(pct) {
+  const t = Math.max(0, Math.min(1, pct / 100));
+  return 60 * Math.pow(16000 / 60, t);
+}
+
+// 필터가 기본값(전부 열림)이면 null을 반환해 기존 트랙에는 노드를 하나도 추가하지 않는다.
+function createTrackFilterChain(ctx, track, startTime) {
+  const f = getTrackFilter(track);
+  if (f.cutoff >= 100 && f.reso <= 0 && f.envAmt <= 0) return null;
+  const lp1 = ctx.createBiquadFilter();
+  const lp2 = ctx.createBiquadFilter();
+  lp1.type = 'lowpass';
+  lp2.type = 'lowpass';
+  // 레조넌스는 1단에만 건다 (lowpass의 Q는 dB 단위). 2단은 -3dB로 눌러 겹침 과장을 막는다.
+  lp1.Q.value = (f.reso / 100) * 18;
+  lp2.Q.value = -3;
+  const baseHz = filterCutoffToHz(f.cutoff);
+  const peakHz = Math.min(16000, baseHz * Math.pow(2, (f.envAmt / 100) * 4)); // env 100% = +4옥타브
+  [lp1, lp2].forEach(lp => {
+    if (peakHz > baseHz + 1) {
+      lp.frequency.setValueAtTime(peakHz, startTime);
+      lp.frequency.exponentialRampToValueAtTime(baseHz, startTime + f.decay);
+    } else {
+      lp.frequency.value = baseHz;
+    }
+  });
+  lp1.connect(lp2);
+  return { input: lp1, output: lp2 };
+}
+
+// 트랙별 마지막 노트(글라이드 출발점). 저장 대상이 아니므로 track 객체 밖 WeakMap에 둔다.
+const wtGlideStates = new WeakMap();
+
 function applyOscPitchAutomation(osc, track, startTime, extraDetune = 0) {
   const detune = getTrackDetuneCents(track) + extraDetune;
   const pitchEnv = getTrackPitchEnv(track);
@@ -3492,8 +3581,8 @@ function startWavetableVoices(ctx, track, pitch, env, startTime, stopTime, lfoDu
   const specs = getUnisonVoiceSpecs(track);
   const morph = Math.max(0, Math.min(1, (track.wtMorph || 0) / 100));
   const waves = {
-    A: wtDataToPeriodicWave(ctx, wtGetSlotData(track, 'A')),
-    B: wtDataToPeriodicWave(ctx, wtGetSlotData(track, 'B'))
+    A: wtGetSlotWave(ctx, track, 'A'),
+    B: wtGetSlotWave(ctx, track, 'B')
   };
   const slotGains = {
     A: Math.cos(morph * Math.PI * 0.5),
@@ -3503,20 +3592,49 @@ function startWavetableVoices(ctx, track, pitch, env, startTime, stopTime, lfoDu
   const gainPerVoice = (1 - noiseMix * 0.5) / specs.length;
   const oscs = [];
   const lfoNodes = [];
+  // 모프 LFO가 켜져 있으면 슬롯 A/B 게인을 나중에 공유 LFO로 흔들기 위해 모아둔다.
+  const morphLFOActive = !!(track.lfo && track.lfo.target === 'morph' && (track.lfo.depth || 0) > 0);
+  const aGains = [];
+  const bGains = [];
+
+  // Analog-like 필터: 오실레이터 합 → 로우패스 2단 → 앰프 env
+  const filterChain = createTrackFilterChain(ctx, track, startTime);
+  const oscDest = filterChain ? filterChain.input : env;
+  if (filterChain) filterChain.output.connect(env);
+
+  // 글라이드: 직전 노트가 (거의) 이어져 있으면 그 음높이에서 미끄러져 들어온다.
+  // 화음(같은 시작점) 노트끼리는 startTime이 같아 조건을 통과하지 못하므로 서로 글라이드하지 않는다.
+  const baseHz = pitchToHz(pitch);
+  const glideSec = getTrackGlideSec(track);
+  let glideFromHz = 0;
+  if (glideSec > 0) {
+    const prev = wtGlideStates.get(track);
+    if (prev && prev.ctx === ctx && startTime > prev.start + 1e-4 &&
+        startTime < prev.end + 0.15 && Math.abs(prev.hz - baseHz) > 0.01) {
+      glideFromHz = prev.hz;
+    }
+    wtGlideStates.set(track, { ctx, hz: baseHz, start: startTime, end: stopTime });
+  }
 
   specs.forEach(spec => {
     const voiceOutput = specs.length > 1 ? ctx.createStereoPanner() : ctx.createGain();
     if (specs.length > 1) {
       voiceOutput.pan.value = spec.pan;
     }
-    voiceOutput.connect(env);
+    voiceOutput.connect(oscDest);
 
     ['A', 'B'].forEach(slot => {
-      if (slotGains[slot] <= 0) return;
+      // 모프 LFO가 켜져 있으면 게인 0인 슬롯도 만들어 둔다 (공유 LFO가 이 슬롯을 흔들어 살려낸다).
+      if (slotGains[slot] <= 0 && !morphLFOActive) return;
       const osc = ctx.createOscillator();
       const oscGain = ctx.createGain();
       osc.setPeriodicWave(waves[slot]);
-      osc.frequency.value = pitchToHz(pitch);
+      if (glideFromHz > 0) {
+        osc.frequency.setValueAtTime(glideFromHz, startTime);
+        osc.frequency.exponentialRampToValueAtTime(baseHz, startTime + glideSec);
+      } else {
+        osc.frequency.value = baseHz;
+      }
       applyOscPitchAutomation(osc, track, startTime, spec.detune + getWTPitchSemis(track, slot) * 100);
       oscGain.gain.value = gainPerVoice * slotGains[slot];
       osc.connect(oscGain);
@@ -3525,9 +3643,10 @@ function startWavetableVoices(ctx, track, pitch, env, startTime, stopTime, lfoDu
       osc.stop(stopTime);
       oscs.push(osc);
       if (activeList) activeList.push({osc, env});
+      if (morphLFOActive) (slot === 'A' ? aGains : bGains).push(oscGain);
 
-      const lfoTarget = track.lfo && track.lfo.target;
-      if (lfoTarget === 'pitch' || lfoTarget === 'morph') {
+      // 피치 비브라토는 오실레이터마다 개별 LFO로 (모두 startTime에 시작해 위상 동일).
+      if (track.lfo && track.lfo.target === 'pitch') {
         const lfoNode = connectLFO(ctx, track, osc, env, startTime, lfoDuration);
         if (lfoNode) {
           lfoNodes.push(lfoNode);
@@ -3536,6 +3655,28 @@ function startWavetableVoices(ctx, track, pitch, env, startTime, stopTime, lfoDu
       }
     });
   });
+
+  // 진짜 모프 LFO: 공유 LFO 하나로 슬롯 A/B 게인을 서로 반대로 흔들어 A↔B 파형을 오간다.
+  // (개별 LFO를 쓰면 A와 B가 정확히 역위상이 안 되므로 오실레이터 1개를 공유한다.)
+  if (morphLFOActive && aGains.length && bGains.length) {
+    const depth = Math.min(1, (track.lfo.depth || 50) / 100);
+    const swing = gainPerVoice * depth * 0.5; // 게인 변조 진폭 (base 위아래로 흔든다)
+    const lfoOsc = ctx.createOscillator();
+    lfoOsc.type = track.lfo.wave || 'sine';
+    lfoOsc.frequency.value = track.lfo.rate || 4;
+    const lfoGainA = ctx.createGain();
+    const lfoGainB = ctx.createGain();
+    lfoGainA.gain.value = swing;   // A는 정방향
+    lfoGainB.gain.value = -swing;  // B는 역방향 → A가 오르면 B가 내린다
+    lfoOsc.connect(lfoGainA);
+    lfoOsc.connect(lfoGainB);
+    aGains.forEach(g => lfoGainA.connect(g.gain));
+    bGains.forEach(g => lfoGainB.connect(g.gain));
+    lfoOsc.start(startTime);
+    lfoOsc.stop(startTime + lfoDuration + 1);
+    lfoNodes.push(lfoOsc);
+    if (activeList) activeList.push({osc: lfoOsc, env});
+  }
 
   if (track.lfo && track.lfo.target === 'volume' && oscs[0]) {
     const lfoNode = connectLFO(ctx, track, oscs[0], env, startTime, lfoDuration);
@@ -3660,6 +3801,43 @@ function wtGetSlotData(track, slot) {
     return new Float32Array(track[key]);
   }
   return wtPresetData(type);
+}
+
+// PeriodicWave 캐시 — wtDataToPeriodicWave의 DFT는 O(N²)라 노트마다 돌리면
+// 첫 scheduleAhead가 수백 ms짜리 동기 루프가 되고, 그 사이 오디오 클럭이
+// 시작 여유(PLAYBACK_START_DELAY)를 지나쳐 첫 박 화음이 밀리거나 누락됐다.
+// 파형 내용이 같으면 만들어둔 PeriodicWave를 재사용한다.
+const wtPresetWaveCache = new WeakMap(); // ctx → Map(프리셋 타입 → wave)
+const wtDrawWaveCache = new WeakMap();   // draw 데이터 배열 → { ctx, copy, wave }
+
+function wtGetSlotWave(ctx, track, slot) {
+  const typeKey = slot === 'A' ? 'wtTypeA' : 'wtTypeB';
+  const dataKey = slot === 'A' ? 'wtDataA' : 'wtDataB';
+  const type = track[typeKey] || (slot === 'A' ? 'sine' : 'square');
+  if (type === 'draw' && track[dataKey]) {
+    const src = track[dataKey];
+    const hit = wtDrawWaveCache.get(src);
+    if (hit && hit.ctx === ctx && hit.copy.length === src.length) {
+      // 그리기 도중 배열이 제자리에서 바뀔 수 있으므로 내용까지 비교해 무효화한다
+      // (256개 비교는 DFT 비용에 비하면 공짜다)
+      let same = true;
+      for (let i = 0; i < src.length; i++) {
+        if (hit.copy[i] !== src[i]) { same = false; break; }
+      }
+      if (same) return hit.wave;
+    }
+    const wave = wtDataToPeriodicWave(ctx, new Float32Array(src));
+    wtDrawWaveCache.set(src, { ctx, copy: Array.from(src), wave });
+    return wave;
+  }
+  let perCtx = wtPresetWaveCache.get(ctx);
+  if (!perCtx) { perCtx = new Map(); wtPresetWaveCache.set(ctx, perCtx); }
+  let wave = perCtx.get(type);
+  if (!wave) {
+    wave = wtDataToPeriodicWave(ctx, wtPresetData(type));
+    perCtx.set(type, wave);
+  }
+  return wave;
 }
 
 // 트랙에서 최종 PeriodicWave 생성
@@ -4027,12 +4205,8 @@ function connectLFO(ctx, track, osc, env, startTime, duration) {
     lfoGain.gain.value = depth * 0.5;
     lfoOsc.connect(lfoGain);
     lfoGain.connect(env.gain);
-  } else if (lfo.target === 'morph') {
-    // morph LFO → detune 기반 음색 워블로 근사
-    lfoGain.gain.value = depth * 50;
-    lfoOsc.connect(lfoGain);
-    lfoGain.connect(osc.detune);
   }
+  // morph 타겟은 startWavetableVoices에서 슬롯 A/B 게인을 직접 흔든다 (여기서 처리 안 함).
 
   lfoOsc.start(startTime);
   lfoOsc.stop(startTime + duration + 1);
@@ -4146,6 +4320,21 @@ document.getElementById('randomSynthBtn').addEventListener('click', () => {
     track.lfo = { target: 'none', rate: 4, depth: 50, wave: 'sine' };
   }
 
+  // 필터 랜덤 (40% 확률로 활성 — 안 걸리면 완전히 열어서 이전 프리셋의 필터가 남지 않게 한다)
+  if (Math.random() < 0.4) {
+    track.filter = {
+      cutoff: Math.floor(Math.random() * 51) + 30,                          // 30~80 (약 500Hz~7kHz)
+      reso: Math.floor(Math.random() * 71),                                 // 0~70%
+      envAmt: Math.random() < 0.5 ? Math.floor(Math.random() * 61) + 20 : 0, // 절반은 20~80%로 "브아앙" 어택
+      decay: +(Math.random() * 0.55 + 0.05).toFixed(2)                      // 0.05~0.6초
+    };
+  } else {
+    track.filter = { cutoff: 100, reso: 0, envAmt: 0, decay: 0.3 };
+  }
+
+  // 글라이드 랜덤 (20% 확률로 30~150ms)
+  track.glide = Math.random() < 0.2 ? (Math.floor(Math.random() * 25) + 6) * 5 : 0;
+
   // UI 전부 갱신
   document.getElementById('samplerGroup').style.display = 'none';
   document.getElementById('adsrA').value = track.adsr.a;
@@ -4154,6 +4343,7 @@ document.getElementById('randomSynthBtn').addEventListener('click', () => {
   document.getElementById('adsrR').value = track.adsr.r;
   updateAdsrDisplay();
   updatePitchControlDisplay(track);
+  updateFilterControlDisplay(track);
   initWTEditor(track);
   initLFOEditor(track);
   saveCurrentSettings();
@@ -4582,7 +4772,7 @@ function preserveBarsForExistingNotes() {
   if (maxBeat > 0) extendProjectBarsForBeat(maxBeat, true);
 }
 
-function scheduleNote(ctx2, track, note, bps) {
+function scheduleNote(ctx2, track, note, bps, passNow) {
   // 드럼키트 트랙이면 이 노트의 행(pitch)에 맞는 드럼 음색으로 교체하고, 그 드럼 고유음에서 합성.
   const _voice = resolveDrumVoice(track, note.pitch);
   track = _voice.track;
@@ -4590,7 +4780,10 @@ function scheduleNote(ctx2, track, note, bps) {
   const startDelay = (note.startBeat - playbackStartBeat) / bps;
   const duration = note.lenBeats / bps;
   const nominalStartTime = playbackStartTime + startDelay;
-  const audioNow = ctx2.currentTime;
+  // 한 scheduleAhead 패스 안에서는 같은 기준 시각(passNow)으로 클램프한다.
+  // 노트마다 currentTime을 새로 읽으면, 예약 루프가 도는 동안 클럭이 전진해
+  // 같은 박자의 화음이 노트별로 조금씩 밀려 찢어져 들린다 (첫 박에서 특히).
+  const audioNow = passNow !== undefined ? passNow : ctx2.currentTime;
   // 시작점이 아주 살짝 과거가 되는 경우가 있는데, 빠른 BPM에서는 그 차이가 한 박자처럼 체감될 수 있다.
   // 노트가 이미 완전히 끝난 경우만 버리고, 경계 노트는 즉시/가까운 미래로 보정해서 살린다.
   if (nominalStartTime + duration < audioNow - 0.03) return;
@@ -4690,7 +4883,9 @@ function scheduleAhead() {
   if (!isPlaying) return;
   const ctx2 = getAudioCtx();
   const bps = project.bpm / 60;
-  const elapsed = Math.max(0, ctx2.currentTime - playbackStartTime);
+  // 이 패스의 기준 시각 — 루프 안에서 노트마다 다시 읽지 않는다 (화음 찢어짐 방지)
+  const passNow = ctx2.currentTime;
+  const elapsed = Math.max(0, passNow - playbackStartTime);
   const currentBeat = playbackStartBeat + elapsed * bps;
   const scheduleUntilBeat = currentBeat + SCHEDULE_AHEAD * bps;
 
@@ -4711,7 +4906,7 @@ function scheduleAhead() {
       if (note.startBeat <= scheduledUntilBeat + BEAT_EPS) return;
       if (note.startBeat > scheduleUntilBeat + BEAT_EPS) return;
       if (note.startBeat + note.lenBeats < playbackStartBeat - BEAT_EPS) return;
-      scheduleNote(ctx2, track, note, bps);
+      scheduleNote(ctx2, track, note, bps, passNow);
     });
   });
 
@@ -4791,6 +4986,22 @@ function resyncPlaybackAfterThrottle(reason = '') {
   }
 }
 
+// 재생 세션 토큰: 클럭 대기 중에 정지/재시작되면 이전 세션의 콜백을 폐기하기 위함
+let playbackSessionId = 0;
+
+// 오디오 클럭이 실제로 흐르기 시작한 뒤 콜백을 실행한다. cb(waited) — waited는 기다렸는지 여부.
+// 이미 정상 구동 중인 컨텍스트면 동기적으로 즉시 실행되므로 기존 경로에 추가 지연이 없다.
+function whenAudioClockRunning(ctx, cb) {
+  if (ctx.state === 'running' && ctx.currentTime > 0) { cb(false); return; }
+  try { const p = ctx.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+  const t0 = ctx.currentTime;
+  let done = false;
+  const finish = () => { if (done) return; done = true; clearInterval(poll); clearTimeout(bail); cb(true); };
+  const poll = setInterval(() => { if (ctx.currentTime > t0) finish(); }, 10);
+  // 클럭이 계속 안 흐르는 비정상 상황에서도 예전(고정 지연) 방식으로라도 시작한다
+  const bail = setTimeout(finish, 1000);
+}
+
 function startPlayback(soloOnly = false) {
   const ctx = getAudioCtx();
   if (ctx.state === 'suspended') ctx.resume();
@@ -4829,9 +5040,27 @@ function startPlayback(soloOnly = false) {
     masterGain.gain.value = Math.max(0.05, 0.25 / Math.sqrt(Math.max(1, activeTracks)));
   }
 
-  // 첫 스케줄
-  scheduleAhead();
+  // 콜드스타트 보정: 정지(⏹)로 AudioContext를 닫았다 새로 만든 직후나 일시정지에서
+  // 깨어나는 직후에는 출력 스트림이 열리기 전까지 예약음이 기기에 따라(블루투스,
+  // 느린 안드로이드 등) 통째로 사라질 수 있다 → "첫 박자가 안 나온다" 제보의 원인.
+  // 오디오 클럭이 실제로 전진하는 것을 확인한 뒤에 시작점을 잡고 예약한다.
+  const session = ++playbackSessionId;
+  whenAudioClockRunning(ctx, waited => {
+    // 기다리는 사이 정지/재시작/컨텍스트 교체가 있었으면 이 세션은 폐기
+    if (!isPlaying || session !== playbackSessionId || ctx !== audioCtx) return;
+    if (waited) {
+      // 위에서 잡아둔 임시 앵커는 멎어 있던 클럭 기준이라, 살아난 클럭 기준으로 다시 잡는다
+      playbackStartTime = ctx.currentTime + PLAYBACK_START_DELAY;
+      playbackStartWallTime = performance.now() + PLAYBACK_START_DELAY * 1000;
+      lastPlaybackTickWallTime = playbackStartWallTime;
+    }
+    // 첫 스케줄
+    scheduleAhead();
+    startPlayheadTimer();
+  });
+}
 
+function startPlayheadTimer() {
   // Playhead animation
   playbackTimer = setInterval(() => {
     const tickNow = performance.now();
@@ -5916,6 +6145,8 @@ function defaultTrackSettings() {
     detune: 0,
     pitchEnv: { amount: 0, decay: 0.08 },
     unison: 1,
+    filter: { cutoff: 100, reso: 0, envAmt: 0, decay: 0.3 },
+    glide: 0,
     adsr: {a: 0.01, d: 0.1, s: 0.7, r: 0.2},
     pan: 64,
     volume: 0,
@@ -6460,6 +6691,7 @@ function openSettings(i) {
   document.getElementById('volSlider').value = getTrackVolumeDb(track);
   updateVolLabel(getTrackVolumeDb(track));
   updatePitchControlDisplay(track);
+  updateFilterControlDisplay(track);
   document.getElementById('muteBtn').className = 'toggle-btn' + (track.muted ? ' active' : '');
   document.getElementById('soloBtn').className = 'toggle-btn' + (track.solo ? ' active solo-active' : '');
   document.getElementById('ghostBtn').className = 'toggle-btn' + (track.ghost !== false ? ' active' : '');
@@ -6516,6 +6748,7 @@ function saveCurrentSettings() {
     decay: parseFloat(document.getElementById('pitchEnvDecaySlider').value) || 0.08
   };
   track.unison = parseInt(document.getElementById('unisonSlider').value, 10) || 1;
+  readFilterControlsInto(track);
   // ADSR은 updateAdsrDisplay에서 이미 즉시 반영되므로 여기서는 건드리지 않음
 }
 
@@ -6589,6 +6822,170 @@ document.getElementById('volSlider').addEventListener('input', e => {
 });
 ['wtPitchASlider','wtPitchBSlider','detuneSlider','pitchEnvAmountSlider','pitchEnvDecaySlider','unisonSlider'].forEach(id => {
   document.getElementById(id).addEventListener('input', savePitchControlsFromInputs);
+});
+
+function updateFilterControlDisplay(track) {
+  const f = getTrackFilter(track);
+  const hz = filterCutoffToHz(f.cutoff);
+  document.getElementById('fltCutoffSlider').value = f.cutoff;
+  document.getElementById('fltCutoffVal').textContent =
+    hz >= 1000 ? (hz / 1000).toFixed(1) + ' kHz' : Math.round(hz) + ' Hz';
+  document.getElementById('fltResoSlider').value = f.reso;
+  document.getElementById('fltResoVal').textContent = f.reso + '%';
+  document.getElementById('fltEnvSlider').value = f.envAmt;
+  document.getElementById('fltEnvVal').textContent = f.envAmt + '%';
+  document.getElementById('fltDecaySlider').value = f.decay;
+  document.getElementById('fltDecayVal').textContent = Math.round(f.decay * 1000) + 'ms';
+  const glideMs = Math.round(getTrackGlideSec(track) * 1000);
+  document.getElementById('glideSlider').value = glideMs;
+  document.getElementById('glideVal').textContent = glideMs > 0 ? glideMs + 'ms' : 'OFF';
+}
+
+function saveFilterControlsFromInputs() {
+  if (currentTrackIdx < 0) return;
+  const track = project.tracks[currentTrackIdx];
+  readFilterControlsInto(track);
+  updateFilterControlDisplay(track);
+  scheduleAutoSave();
+}
+
+function readFilterControlsInto(track) {
+  // cutoff는 0이 유효한 값이라 `|| 기본값` 패턴을 쓰면 안 된다
+  const cut = parseInt(document.getElementById('fltCutoffSlider').value, 10);
+  track.filter = {
+    cutoff: Number.isFinite(cut) ? cut : 100,
+    reso: parseInt(document.getElementById('fltResoSlider').value, 10) || 0,
+    envAmt: parseInt(document.getElementById('fltEnvSlider').value, 10) || 0,
+    decay: parseFloat(document.getElementById('fltDecaySlider').value) || 0.3
+  };
+  track.glide = parseInt(document.getElementById('glideSlider').value, 10) || 0;
+}
+
+['fltCutoffSlider','fltResoSlider','fltEnvSlider','fltDecaySlider','glideSlider'].forEach(id => {
+  document.getElementById(id).addEventListener('input', saveFilterControlsFromInputs);
+});
+
+// ANALOG-LIKE 프리셋: SAW 2옥타브 레이어 + 유니즌 디튠 + 레조넌스 로우패스 + 필터 env + 글라이드
+document.getElementById('analogLikePresetBtn').addEventListener('click', () => {
+  if (currentTrackIdx < 0) return;
+  const track = project.tracks[currentTrackIdx];
+  track.waveType = 'wavetable';
+  track.drumKit = false;
+  track.wtTypeA = 'sawtooth'; track.wtDataA = null; track.wtPitchA = 0;
+  track.wtTypeB = 'sawtooth'; track.wtDataB = null; track.wtPitchB = -12;
+  track.wtMorph = 35; // A(기본 음)에 무게, B(-1옥타브)는 받침
+  track.noiseMix = 0;
+  track.unison = 3;
+  track.detune = 0;
+  track.pitchEnv = { amount: 0, decay: 0.08 };
+  track.lfo = { target: 'none', rate: 4, depth: 50, wave: 'sine' };
+  track.adsr = { a: 0.005, d: 0.25, s: 0.6, r: 0.15 };
+  track.filter = { cutoff: 45, reso: 35, envAmt: 55, decay: 0.35 };
+  track.glide = 60;
+  // 모든 슬라이더를 track 값으로 다시 채운다 (드럼 프리셋과 같은 방식)
+  openSettings(currentTrackIdx);
+  updateAdsrDisplay();
+  scheduleAutoSave();
+  previewNote(48);
+});
+
+// ============================================================
+// 음색 프리셋 저장/불러오기 (프로젝트처럼 JSON 파일로)
+// ============================================================
+const VOICE_PRESET_FILE_TYPE = 'composer-voice-preset';
+// 뮤트/솔로/고스트와 트랙 고유 정보(이름·색·노트)만 빼고 소리에 관련된 전부를 저장한다.
+const VOICE_PRESET_FIELDS = [
+  'waveType', 'wtTypeA', 'wtTypeB', 'wtMorph', 'wtDataA', 'wtDataB',
+  'wtPitchA', 'wtPitchB', 'noiseMix', 'noisePitchFilter', 'lfo',
+  'detune', 'pitchEnv', 'unison', 'filter', 'glide', 'adsr',
+  'pan', 'volume', 'drumKit',
+  'samplerData', 'samplerRate', 'samplerRoot', 'samplerStart', 'samplerEnd'
+];
+
+function saveVoicePresetToFile(name) {
+  if (!name || currentTrackIdx < 0) return;
+  saveCurrentSettings(); // 슬라이더의 최신값을 track에 반영한 뒤 스냅샷
+  const track = project.tracks[currentTrackIdx];
+  const voice = {};
+  VOICE_PRESET_FIELDS.forEach(f => {
+    if (track[f] !== undefined) voice[f] = track[f];
+  });
+  const data = { type: VOICE_PRESET_FILE_TYPE, version: 1, name, voice };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  downloadBlob(blob, name + '.json');
+}
+
+// 저장 버튼: 버튼 자리를 파일 이름 입력칸으로 바꿔서 (트랙 이름 편집과 같은 인라인 방식) 입력받는다
+document.getElementById('voicePresetSaveBtn').addEventListener('click', () => {
+  if (currentTrackIdx < 0) return;
+  const btn = document.getElementById('voicePresetSaveBtn');
+  const track = project.tracks[currentTrackIdx];
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = track.name || '음색 프리셋';
+  input.maxLength = 40;
+  input.style.cssText = 'flex:1;background:var(--bg3);border:1px solid var(--accent);color:var(--text);border-radius:6px;padding:8px;font-size:11px;font-family:Consolas,monospace;outline:none;';
+  btn.style.display = 'none';
+  btn.parentNode.insertBefore(input, btn);
+  input.focus();
+  input.select();
+  let closed = false;
+  const done = commit => {
+    if (closed) return;
+    closed = true;
+    const name = input.value.trim();
+    input.remove();
+    btn.style.display = '';
+    if (commit && name) saveVoicePresetToFile(name);
+  };
+  input.addEventListener('blur', () => done(true));
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); done(true); }
+    if (e.key === 'Escape') done(false);
+  });
+});
+
+// 불러오기 버튼 → 파일 선택
+document.getElementById('voicePresetLoadBtn').addEventListener('click', () => {
+  if (currentTrackIdx < 0) return;
+  document.getElementById('voicePresetFileInput').click();
+});
+
+document.getElementById('voicePresetFileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      // 정식 프리셋 파일이 우선. 예전/수동 편집 파일도 음색 필드가 보이면 받아준다.
+      const voice = data && data.type === VOICE_PRESET_FILE_TYPE && data.voice ? data.voice
+        : (data && (data.waveType || data.adsr || data.wtTypeA) ? data : null);
+      if (!voice) {
+        if (data && Array.isArray(data.tracks)) {
+          showConfirm('이 파일은 프로젝트 파일이에요.\n프로젝트는 메뉴(⋮)의 "열기"로 불러와 주세요.', () => {}, '확인', '');
+        } else {
+          showConfirm('음색 프리셋 파일이 아니에요.', () => {}, '확인', '');
+        }
+        return;
+      }
+      if (currentTrackIdx < 0) return;
+      const track = project.tracks[currentTrackIdx];
+      VOICE_PRESET_FIELDS.forEach(f => {
+        if (voice[f] !== undefined) track[f] = voice[f];
+        else delete track[f]; // 프리셋에 없는 필드는 지워서 이전 음색이 섞이지 않게 한다
+      });
+      // 드럼 프리셋과 같은 방식으로 UI 전체 갱신 + 미리듣기
+      openSettings(currentTrackIdx);
+      updateAdsrDisplay();
+      scheduleAutoSave();
+      previewNote(60);
+    } catch {
+      showConfirm('파일을 읽을 수 없습니다.', () => {}, '확인', '');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
 });
 
 // 재생 중 신스 설정(랜덤·웨이브테이블·피치·LFO·ADSR·노이즈·팬·볼륨 등)이 바뀌면 즉시 새 사운드로 이어 재생.
@@ -7372,11 +7769,13 @@ function setupPRTouch() {
       return;
     }
 
-    // 같은 pitch + 스냅 위치에 이미 겹치는 노트 있으면 생성 막기
+    // 같은 pitch + 스냅 위치에 이미 겹치는 노트 있으면 생성 막기.
+    // 경계를 맞대기만 한 경우(앞 노트 끝 == 새 노트 시작)는 겹침이 아니다.
+    // 셋잇단(1/3박) 등에서 끝/시작이 부동소수점으로 1 ULP 어긋나 잘못 막히던 것을 BEAT_EPS로 흡수한다.
     const overlap = PR.notes.find(n =>
       n.pitch === newPitch &&
-      snapped < n.startBeat + n.lenBeats &&
-      snapped + snapLen > n.startBeat
+      snapped < n.startBeat + n.lenBeats - BEAT_EPS &&
+      snapped + snapLen > n.startBeat + BEAT_EPS
     );
     if (overlap) return;
 
@@ -9297,7 +9696,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.2.2.3<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.3.1.1<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
     () => {}, '확인', ''
   );
 });
