@@ -3592,6 +3592,10 @@ function startWavetableVoices(ctx, track, pitch, env, startTime, stopTime, lfoDu
   const gainPerVoice = (1 - noiseMix * 0.5) / specs.length;
   const oscs = [];
   const lfoNodes = [];
+  // 모프 LFO가 켜져 있으면 슬롯 A/B 게인을 나중에 공유 LFO로 흔들기 위해 모아둔다.
+  const morphLFOActive = !!(track.lfo && track.lfo.target === 'morph' && (track.lfo.depth || 0) > 0);
+  const aGains = [];
+  const bGains = [];
 
   // Analog-like 필터: 오실레이터 합 → 로우패스 2단 → 앰프 env
   const filterChain = createTrackFilterChain(ctx, track, startTime);
@@ -3620,7 +3624,8 @@ function startWavetableVoices(ctx, track, pitch, env, startTime, stopTime, lfoDu
     voiceOutput.connect(oscDest);
 
     ['A', 'B'].forEach(slot => {
-      if (slotGains[slot] <= 0) return;
+      // 모프 LFO가 켜져 있으면 게인 0인 슬롯도 만들어 둔다 (공유 LFO가 이 슬롯을 흔들어 살려낸다).
+      if (slotGains[slot] <= 0 && !morphLFOActive) return;
       const osc = ctx.createOscillator();
       const oscGain = ctx.createGain();
       osc.setPeriodicWave(waves[slot]);
@@ -3638,9 +3643,10 @@ function startWavetableVoices(ctx, track, pitch, env, startTime, stopTime, lfoDu
       osc.stop(stopTime);
       oscs.push(osc);
       if (activeList) activeList.push({osc, env});
+      if (morphLFOActive) (slot === 'A' ? aGains : bGains).push(oscGain);
 
-      const lfoTarget = track.lfo && track.lfo.target;
-      if (lfoTarget === 'pitch' || lfoTarget === 'morph') {
+      // 피치 비브라토는 오실레이터마다 개별 LFO로 (모두 startTime에 시작해 위상 동일).
+      if (track.lfo && track.lfo.target === 'pitch') {
         const lfoNode = connectLFO(ctx, track, osc, env, startTime, lfoDuration);
         if (lfoNode) {
           lfoNodes.push(lfoNode);
@@ -3649,6 +3655,28 @@ function startWavetableVoices(ctx, track, pitch, env, startTime, stopTime, lfoDu
       }
     });
   });
+
+  // 진짜 모프 LFO: 공유 LFO 하나로 슬롯 A/B 게인을 서로 반대로 흔들어 A↔B 파형을 오간다.
+  // (개별 LFO를 쓰면 A와 B가 정확히 역위상이 안 되므로 오실레이터 1개를 공유한다.)
+  if (morphLFOActive && aGains.length && bGains.length) {
+    const depth = Math.min(1, (track.lfo.depth || 50) / 100);
+    const swing = gainPerVoice * depth * 0.5; // 게인 변조 진폭 (base 위아래로 흔든다)
+    const lfoOsc = ctx.createOscillator();
+    lfoOsc.type = track.lfo.wave || 'sine';
+    lfoOsc.frequency.value = track.lfo.rate || 4;
+    const lfoGainA = ctx.createGain();
+    const lfoGainB = ctx.createGain();
+    lfoGainA.gain.value = swing;   // A는 정방향
+    lfoGainB.gain.value = -swing;  // B는 역방향 → A가 오르면 B가 내린다
+    lfoOsc.connect(lfoGainA);
+    lfoOsc.connect(lfoGainB);
+    aGains.forEach(g => lfoGainA.connect(g.gain));
+    bGains.forEach(g => lfoGainB.connect(g.gain));
+    lfoOsc.start(startTime);
+    lfoOsc.stop(startTime + lfoDuration + 1);
+    lfoNodes.push(lfoOsc);
+    if (activeList) activeList.push({osc: lfoOsc, env});
+  }
 
   if (track.lfo && track.lfo.target === 'volume' && oscs[0]) {
     const lfoNode = connectLFO(ctx, track, oscs[0], env, startTime, lfoDuration);
@@ -4177,12 +4205,8 @@ function connectLFO(ctx, track, osc, env, startTime, duration) {
     lfoGain.gain.value = depth * 0.5;
     lfoOsc.connect(lfoGain);
     lfoGain.connect(env.gain);
-  } else if (lfo.target === 'morph') {
-    // morph LFO → detune 기반 음색 워블로 근사
-    lfoGain.gain.value = depth * 50;
-    lfoOsc.connect(lfoGain);
-    lfoGain.connect(osc.detune);
   }
+  // morph 타겟은 startWavetableVoices에서 슬롯 A/B 게인을 직접 흔든다 (여기서 처리 안 함).
 
   lfoOsc.start(startTime);
   lfoOsc.stop(startTime + duration + 1);
