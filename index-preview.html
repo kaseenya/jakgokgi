@@ -624,6 +624,10 @@
     border-color: var(--accent);
     color: #fff;
   }
+  .chord-pad-btn:disabled {
+    opacity: 0.32;
+    cursor: not-allowed;
+  }
   .chord-pad-play {
     background: #1a3328;
     border-color: #2c6a4b;
@@ -647,6 +651,15 @@
     width: 100%;
     min-width: 0;
     flex: none;
+  }
+  .chord-pad.drum-mode #chordRootButtons {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .chord-pad.drum-mode #chordRootButtons .chord-pad-btn {
+    width: 100%;
+    height: 32px;
   }
 
 
@@ -3207,15 +3220,15 @@
 <div class="chord-pad collapsed" id="chordPad">
 <button class="chord-pad-toggle" id="chordPadToggle">CHORD ▲</button>
 <div class="chord-pad-body">
-<div class="chord-pad-row">
-<div class="chord-pad-label">TONIC</div>
+<div class="chord-pad-row" id="chordRootRow">
+<div class="chord-pad-label" id="chordRootLabel">TONIC</div>
 <div class="chord-pad-buttons" id="chordRootButtons"></div>
 </div>
-<div class="chord-pad-row">
+<div class="chord-pad-row" id="chordTypeRow">
 <div class="chord-pad-label">TYPE</div>
 <div class="chord-pad-buttons" id="chordTypeButtons"></div>
 </div>
-<div class="chord-pad-row">
+<div class="chord-pad-row" id="chordExtRow">
 <div class="chord-pad-label">ADD</div>
 <div class="chord-pad-buttons" id="chordExtButtons"></div>
 </div>
@@ -4508,14 +4521,34 @@ const CHORD_PAD_EXTS = {
   omit3:  { label: 'omit3', omitThird: true },
   omit5:  { label: 'omit5', omitFifth: true }
 };
-const CHORD_PAD_EXT_ORDER = ['7', '9', '11', '13', 'maj7', 'sus2', 'sus4', 'add2', 'b5', '#5', 'b9', '#9', 'omit3', 'omit5'];
+const CHORD_PAD_EXT_ORDER = ['7', 'maj7', '9', 'b9', '#9', '11', '13', 'sus2', 'sus4', 'add2', 'b5', '#5', 'omit3', 'omit5'];
+const CHORD_PAD_NAME_ORDER = ['7', 'maj7', 'b5', '#5', 'b9', '9', '#9', '11', '13', 'sus2', 'sus4', 'add2', 'omit3', 'omit5'];
+const CHORD_PAD_EXCLUSIVE_GROUPS = [
+  ['7', 'maj7'],
+  ['sus2', 'sus4', 'omit3'],
+  ['b5', '#5', 'omit5'],
+  ['sus2', 'add2']
+];
 let chordPadState = {
   rootName: 'C',
   rootPitch: 60,
   type: 'maj',
   exts: [],
+  drumKey: 'kick',
   initialized: false
 };
+
+function chordPadIsDrumMode() {
+  return typeof prDrumKitActive === 'function' && prDrumKitActive();
+}
+
+function updateChordPadToggleLabel() {
+  const pad = document.getElementById('chordPad');
+  const toggle = document.getElementById('chordPadToggle');
+  if (!pad || !toggle) return;
+  const modeLabel = chordPadIsDrumMode() ? 'DRUM' : 'CHORD';
+  toggle.textContent = modeLabel + (pad.classList.contains('collapsed') ? ' ▲' : ' ▼');
+}
 
 function schedulePRResize() {
   // 접이식 패널 때문에 피아노롤 영역 크기가 바뀔 때, 캔버스 실제 픽셀 크기도 다시 맞춘다.
@@ -4540,7 +4573,7 @@ function initChordPad() {
   if (!chordPadState.initialized) {
     toggle.addEventListener('click', () => {
       pad.classList.toggle('collapsed');
-      toggle.textContent = pad.classList.contains('collapsed') ? 'CHORD ▲' : 'CHORD ▼';
+      updateChordPadToggleLabel();
       schedulePRResize();
     });
     if (window.ResizeObserver) {
@@ -4562,14 +4595,84 @@ function makeChordPadButton(text, active, onClick, extraClass) {
   return btn;
 }
 
+function normalizeChordPadExts(type, exts) {
+  let normalized = [];
+  (Array.isArray(exts) ? exts : []).forEach(ext => {
+    if (!CHORD_PAD_EXTS[ext]) return;
+    CHORD_PAD_EXCLUSIVE_GROUPS.forEach(group => {
+      if (group.includes(ext)) normalized = normalized.filter(active => !group.includes(active));
+    });
+    normalized.push(ext);
+  });
+
+  // dim은 이미 b5, aug는 이미 #5이므로 소리가 변하지 않는 중복 선택을 제거한다.
+  if (type === 'dim') normalized = normalized.filter(ext => ext !== 'b5');
+  if (type === 'aug') normalized = normalized.filter(ext => ext !== '#5');
+
+  return CHORD_PAD_EXT_ORDER.filter(ext => normalized.includes(ext));
+}
+
+function toggleChordPadExt(ext) {
+  const current = chordPadState.exts.includes(ext)
+    ? chordPadState.exts.filter(active => active !== ext)
+    : [...chordPadState.exts, ext];
+  chordPadState.exts = normalizeChordPadExts(chordPadState.type, current);
+}
+
+function chordPadExtDisabled(ext) {
+  return (chordPadState.type === 'dim' && ext === 'b5') ||
+    (chordPadState.type === 'aug' && ext === '#5');
+}
+
+function renderDrumPad(rootBox, playBox) {
+  if (!DRUM_KIT[chordPadState.drumKey]) chordPadState.drumKey = DRUM_KIT_ORDER[0];
+
+  DRUM_KIT_ORDER.forEach(key => {
+    const label = DRUM_LABELS[key] || key;
+    rootBox.appendChild(makeChordPadButton(label, chordPadState.drumKey === key, () => {
+      chordPadState.drumKey = key;
+      previewNote(drumRowForKey(key), 0.25);
+      renderChordPad();
+    }));
+  });
+
+  const drumLabel = DRUM_LABELS[chordPadState.drumKey] || chordPadState.drumKey;
+  playBox.appendChild(makeChordPadButton('PLAY ' + drumLabel, false, () => {
+    previewNote(drumRowForKey(chordPadState.drumKey), 0.25);
+  }, 'chord-pad-play'));
+  playBox.appendChild(makeChordPadButton('INPUT', false, () => {
+    inputDrumPadNote(chordPadState.drumKey);
+  }, 'chord-pad-play'));
+}
+
 function renderChordPad() {
+  const pad = document.getElementById('chordPad');
   const rootBox = document.getElementById('chordRootButtons');
   const typeBox = document.getElementById('chordTypeButtons');
   const extBox = document.getElementById('chordExtButtons');
   const playBox = document.getElementById('chordPlayButtons');
-  if (!rootBox || !typeBox || !extBox || !playBox) return;
+  const rootLabel = document.getElementById('chordRootLabel');
+  const typeRow = document.getElementById('chordTypeRow');
+  const extRow = document.getElementById('chordExtRow');
+  if (!pad || !rootBox || !typeBox || !extBox || !playBox) return;
 
   rootBox.innerHTML = '';
+  typeBox.innerHTML = '';
+  extBox.innerHTML = '';
+  playBox.innerHTML = '';
+
+  const isDrumMode = chordPadIsDrumMode();
+  pad.classList.toggle('drum-mode', isDrumMode);
+  if (rootLabel) rootLabel.textContent = isDrumMode ? 'PAD' : 'TONIC';
+  if (typeRow) typeRow.style.display = isDrumMode ? 'none' : '';
+  if (extRow) extRow.style.display = isDrumMode ? 'none' : '';
+  updateChordPadToggleLabel();
+
+  if (isDrumMode) {
+    renderDrumPad(rootBox, playBox);
+    return;
+  }
+
   CHORD_PAD_ROOTS.forEach(([name, pitch]) => {
     rootBox.appendChild(makeChordPadButton(name, chordPadState.rootName === name, () => {
       chordPadState.rootName = name;
@@ -4578,35 +4681,29 @@ function renderChordPad() {
     }));
   });
 
-
-  typeBox.innerHTML = '';
   Object.keys(CHORD_PAD_TYPES).forEach(type => {
     typeBox.appendChild(makeChordPadButton(CHORD_PAD_TYPES[type].label, chordPadState.type === type, () => {
       chordPadState.type = type;
+      chordPadState.exts = normalizeChordPadExts(type, chordPadState.exts);
       renderChordPad();
     }));
   });
 
-  extBox.innerHTML = '';
-  const extButtonOrder = ['7', '9', '11', '13', 'maj7', 'sus2', 'sus4', 'add2', 'b5', '#5', 'b9', '#9', 'omit3', 'omit5'];
-  extButtonOrder.forEach(ext => {
+  CHORD_PAD_EXT_ORDER.forEach(ext => {
     const info = CHORD_PAD_EXTS[ext];
     if (!info) return;
-    extBox.appendChild(makeChordPadButton(info.label, chordPadState.exts.includes(ext), () => {
-      if (chordPadState.exts.includes(ext)) {
-        chordPadState.exts = chordPadState.exts.filter(v => v !== ext);
-      } else {
-        chordPadState.exts.push(ext);
-      }
+    const btn = makeChordPadButton(info.label, chordPadState.exts.includes(ext), () => {
+      toggleChordPadExt(ext);
       renderChordPad();
-    }));
+    });
+    btn.disabled = chordPadExtDisabled(ext);
+    extBox.appendChild(btn);
   });
   extBox.appendChild(makeChordPadButton('-', chordPadState.exts.length === 0, () => {
     chordPadState.exts = [];
     renderChordPad();
   }));
 
-  playBox.innerHTML = '';
   const chordName = getChordPadName();
   playBox.appendChild(makeChordPadButton('PLAY ' + chordName, false, () => {
     playChordPadChord(getChordPadRootPitch(), chordPadState.type, chordPadState.exts);
@@ -4629,7 +4726,9 @@ function getChordPadName() {
   const typeLabel = chordPadState.type === 'maj'
     ? ''
     : (CHORD_PAD_TYPES[chordPadState.type]?.label || '');
-  const extLabel = chordPadState.exts
+  const normalizedExts = normalizeChordPadExts(chordPadState.type, chordPadState.exts);
+  const extLabel = CHORD_PAD_NAME_ORDER
+    .filter(ext => normalizedExts.includes(ext))
     .map(ext => CHORD_PAD_EXTS[ext]?.label)
     .filter(Boolean)
     .join('');
@@ -4638,7 +4737,7 @@ function getChordPadName() {
 
 function getChordPadPitches(rootPitch, type, exts) {
   const typeInfo = CHORD_PAD_TYPES[type] || CHORD_PAD_TYPES.maj;
-  const extList = Array.isArray(exts) ? exts : [];
+  const extList = normalizeChordPadExts(type, exts);
   const activeExts = extList.map(ext => CHORD_PAD_EXTS[ext]).filter(Boolean);
   let intervals = [...typeInfo.intervals];
 
@@ -4666,11 +4765,12 @@ function getChordPadPitches(rootPitch, type, exts) {
 
   return intervals
     .map(interval => rootPitch + interval)
-    .filter((pitch, idx, arr) => pitch >= 0 && pitch <= 127 && arr.indexOf(pitch) === idx);
+    .filter((pitch, idx, arr) => pitch >= 0 && pitch <= 127 && arr.indexOf(pitch) === idx)
+    .sort((a, b) => a - b);
 }
 
 function playChordPadChord(rootPitch, type, exts) {
-  if (currentTrackIdx < 0) return;
+  if (currentTrackIdx < 0 || prDrumKitActive()) return;
   const pitches = getChordPadPitches(rootPitch, type, exts);
   pitches.forEach((pitch, idx) => {
     setTimeout(() => previewNote(pitch, 1), idx * 8);
@@ -4678,7 +4778,7 @@ function playChordPadChord(rootPitch, type, exts) {
 }
 
 function inputChordPadChord(rootPitch, type, exts) {
-  if (currentTrackIdx < 0) return;
+  if (currentTrackIdx < 0 || prDrumKitActive()) return;
   const pitches = getChordPadPitches(rootPitch, type, exts);
   if (!pitches.length) return;
 
@@ -4707,6 +4807,33 @@ function inputChordPadChord(rootPitch, type, exts) {
   savePRNotes();
   drawPRAndTimeline();
   showPRToast('INPUT ' + getChordPadName());
+}
+
+function inputDrumPadNote(key) {
+  if (currentTrackIdx < 0 || !prDrumKitActive() || !DRUM_KIT[key]) return;
+
+  prSnapshot();
+  const snap = PR.snapValues[PR.snapIdx] || 0;
+  const startBeat = snap > 0 ? Math.round(PR.playPos / snap) * snap : PR.playPos;
+  const lenBeats = snap > 0 ? snap : (barLength() / 8);
+
+  const wasSelectMode = !!PR.selectMode;
+  PR.selectMode = true;
+  const selectBtn = document.getElementById('selectBtn');
+  if (selectBtn) selectBtn.className = 'pr-btn active';
+  if (!wasSelectMode) PR.notes.forEach(n => n.selected = false);
+
+  PR.notes.push({
+    pitch: drumRowForKey(key),
+    startBeat,
+    lenBeats,
+    selected: true
+  });
+
+  PR.selRect = null;
+  savePRNotes();
+  drawPRAndTimeline();
+  showPRToast('INPUT ' + (DRUM_LABELS[key] || key));
 }
 
 // ============================================================
@@ -9738,7 +9865,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.3.1.5<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.3.2.0<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
     () => {}, '확인', ''
   );
 });
