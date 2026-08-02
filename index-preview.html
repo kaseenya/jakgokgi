@@ -5934,7 +5934,9 @@ const HAMSTER_COLORS = [
 
 function randomHamsterName() {
   const color = HAMSTER_COLORS[Math.floor(Math.random() * HAMSTER_COLORS.length)];
-  return `${color} 햄스터 프로젝트`;
+  const d = new Date();
+  const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  return `${color} 햄스터 프로젝트 ${ymd}`;
 }
 
 // 트랙 색상 팔레트
