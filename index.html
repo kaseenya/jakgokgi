@@ -9779,9 +9779,12 @@ document.getElementById('menuExportCustom').addEventListener('click', () => {
     const row = document.createElement('div');
     row.style.cssText = 'background:var(--bg3);border-radius:8px;padding:12px;border:1px solid var(--border);';
     const isDrum = !!track.drumKit;
+    // 트랙 이름이 있으면 채널 정보 앞에 함께 보여준다 (트랙 구분용)
+    const trackName = (track.name || '').trim();
+    const nameHtml = trackName ? `<span style="color:var(--text);font-weight:600;">${escapeHtml(trackName)}</span> · ` : '';
     const head = isDrum
-      ? `Ch.${i+1} · 🥁 GM 드럼 → MIDI 채널 10 (악기 선택 무시됨)`
-      : `Ch.${i+1} · ${escapeHtml((track.waveType||'sine').toUpperCase())}`;
+      ? `${nameHtml}Ch.${i+1} · 🥁 GM 드럼 → MIDI 채널 10 (악기 선택 무시됨)`
+      : `${nameHtml}Ch.${i+1} · ${escapeHtml((track.waveType||'sine').toUpperCase())}`;
     row.innerHTML = `
       <div style="font-size:10px;color:var(--text3);margin-bottom:8px;">${head}</div>
       <select data-idx="${i}" ${isDrum ? 'disabled' : ''} style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:8px;font-family:'Consolas, D2Coding, monospace',monospace;font-size:11px;outline:none;${isDrum ? 'opacity:0.5;' : ''}">
@@ -9867,7 +9870,7 @@ document.getElementById('menuSettings').addEventListener('click', () => {
 });
 document.getElementById('creditBtn').addEventListener('click', () => {
   showConfirm(
-    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.3.2.0<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
+    '제작: 클로드, ChatGPT(바이브 코딩)<br>단추누르기: 케이시니아🐁<br><br>작곡기 버전 1.3.2.1<br><div style="font-size:11px; line-height:1.5;"><a href="https://github.com/kaseenya/jakgokgi">https://github.com/kaseenya/jakgokgi</a></div>',
     () => {}, '확인', ''
   );
 });
